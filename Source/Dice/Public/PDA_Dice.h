@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "PDA_Base.h"
 #include "Engine/DataAsset.h"
 #include "Engine/StaticMesh.h"
 #include "Materials/MaterialInterface.h"
@@ -16,29 +17,20 @@ enum class EDiceType : uint8
     D10 UMETA(DisplayName = "D10"),
     D12 UMETA(DisplayName = "D12"),
     D20 UMETA(DisplayName = "D20"),
-    Custom UMETA(DisplayName = "Custom")
-};
-
-/** Enum for defining dice FaceTypes */
-UENUM(BlueprintType)
-enum class EDiceFace : uint8
-{
-    Numeric UMETA(DisplayName = "Numeric"),
-    Label UMETA(DisplayName = "Label")
 };
 
 /**
  * A data asset to hold information about the dice's faces, visual representation, and metadata.
  */
 UCLASS(BlueprintType)
-class DICE_API UPDA_Dice : public UPrimaryDataAsset
+class DICE_API UPDA_Dice : public UPDA_Base
 {
     GENERATED_BODY()
 
 public:
 
-    // A map associating face index with its label (e.g., 1, 2, 3, etc. or any custom string)
-    // INT32 matches the socket name of the static mesh
+    /** A map associating face index with its label (e.g., 1, 2, 3, etc. or any custom string)
+     INT32 matches the socket name of the static mesh */
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DiceData", meta = (Tooltip = "Map associating each face index with its label.", EditCondition = "bHasValidMesh"))
     TMap<FString, FString> FaceLabels;
 
@@ -53,15 +45,7 @@ public:
     // Enum representing the type of dice (D6, D20, etc.)
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DiceData", meta = (Tooltip = "The type of dice (e.g., D6, D20)."))
     EDiceType DiceType;
-
-    // Enum representing the typeface of the dice (numeric, label, etc.)
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DiceData", meta = (Tooltip = "The type of dice face (Numeric or Label)."))
-    EDiceFace DiceFace;
     
-    // A name or description for this type of dice (e.g., "Standard d20")
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DiceData", meta = (Tooltip = "A description for this dice type."))
-    FText DiceTypeDescription;
-
     // The class to use for this dice type (e.g., a subclass of AActor or UIndividualDice) (soft pointer)
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DiceData", meta = (Tooltip = "The class to spawn for this type of dice."))
     TSoftClassPtr<UObject> DiceClass;

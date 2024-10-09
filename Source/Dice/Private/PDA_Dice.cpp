@@ -45,7 +45,7 @@ void UPDA_Dice::AutoFillFaceNormals()
         FQuat SocketRotation = Socket->RelativeRotation.Quaternion();
 
         // The normal is the forward vector of the socket's rotation
-        FVector FaceNormal = SocketRotation.GetUpVector();
+        FVector FaceNormal = SocketRotation.GetRightVector();
 
         // Add the calculated normal to the face normals array
         FaceNormals.Add(FaceNormal);

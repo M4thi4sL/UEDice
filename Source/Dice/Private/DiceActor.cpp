@@ -86,10 +86,13 @@ void ADiceActor::HandlePhysicsSleep(UPrimitiveComponent* SleepingComponent, FNam
 	// Physics simulation has gone to sleep; calculate and broadcast the dice result
 	FText DiceResult = CalculateDiceResult();
 	UE_LOG(LogTemp, Log, TEXT("Physics sleep detected. Dice result is: %s"), *DiceResult.ToString());
-
-	SetDieState(EDieState::Stopped);
-	// Broadcast the result to any listeners
-	OnDieResult.Broadcast(this, DiceResult);
+	
+	if(CheckValidity())
+	{
+		SetDieState(EDieState::Stopped);
+		OnDieResult.Broadcast(this, DiceResult);
+	}
+	else SetDieState(EDieState::Invalid);
 }
 
 FText ADiceActor::CalculateDiceResult() const
@@ -139,6 +142,30 @@ FText ADiceActor::CalculateDiceResult() const
 	UE_LOG(LogTemp, Warning, TEXT("No valid label found for the highest socket."));
 	return FText::FromString("Unknown");
 }
+
+bool ADiceActor::CheckValidity() const
+{
+	FVector ActorUpVector = GetActorUpVector().GetSafeNormal();
+
+    for (const FVector& FaceNormal : DiceData->FaceNormals)
+	{
+    	// Normalize the current face normal
+    	FVector NormalizedFaceNormal = FaceNormal.GetSafeNormal();
+
+    	// Error tolerance value
+    	float ErrorTolerance = 0.05f;
+
+    	// Check if each component of the vectors is nearly equal
+    	bool bXEqual = FMath::IsNearlyEqual(NormalizedFaceNormal.X, ActorUpVector.X, ErrorTolerance);
+    	bool bYEqual = FMath::IsNearlyEqual(NormalizedFaceNormal.Y, ActorUpVector.Y, ErrorTolerance);
+    	bool bZEqual = FMath::IsNearlyEqual(NormalizedFaceNormal.Z, ActorUpVector.Z, ErrorTolerance);
+
+    	// If all components are nearly equal, set a valid flag, else set invalid
+    	if (bXEqual || bYEqual || bZEqual) return true;
+	}
+	return false;
+}
+
 void ADiceActor::BeginPlay()
 {
 	Super::BeginPlay();

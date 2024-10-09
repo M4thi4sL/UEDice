@@ -16,7 +16,8 @@ enum class EDieState : uint8
 	Idle UMETA(DisplayName = "Idle"),
 	Rolling UMETA(DisplayName = "Rolling"),
 	Stopped UMETA(DisplayName = "Stopped"),
-	Locked UMETA(DisplayName = "Locked")
+	Locked UMETA(DisplayName = "Locked"),
+	Invalid UMETA(DisplayName = "Invalid")
 };
 
 
@@ -75,6 +76,9 @@ private:
 	// Calculate the dice result based on the up face
 	FText CalculateDiceResult() const;
 
+	// Check if we got a valid dice result, eg: the dice didn't stop correctly.
+	bool CheckValidity() const;
+	
 	// The internal DieState
 	EDieState DieState;
 	

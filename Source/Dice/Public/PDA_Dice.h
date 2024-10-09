@@ -29,25 +29,30 @@ class DICE_API UPDA_Dice : public UPDA_Base
 
 public:
 
+    virtual FPrimaryAssetId GetPrimaryAssetId() const override;
+    
     /** A map associating face index with its label (e.g., 1, 2, 3, etc. or any custom string)
      INT32 matches the socket name of the static mesh */
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DiceData", meta = (Tooltip = "Map associating each face index with its label.", EditCondition = "bHasValidMesh"))
-    TMap<FString, FString> FaceLabels;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DiceData", meta = (EditCondition = "bHasValidMesh"))
+    TMap<FString, FText> FaceLabels;
 
+    UPROPERTY(VisibleAnywhere , BlueprintReadOnly, Category = "DiceData")
+    TArray<FVector> FaceNormals;
+    
     // The mesh to use for rendering the dice (soft pointer)
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DiceData", meta = (DisplayName = "Dice Mesh", Tooltip = "The 3D model representing this dice in the game."))
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DiceData", meta = (AssetBundles="Game"))
     TSoftObjectPtr<UStaticMesh> DiceMesh;
 
     // The material to apply to the dice mesh (soft pointer)
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DiceData", meta = (Tooltip = "The material to apply to the dice mesh."))
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DiceData", meta = (AssetBundles="Game"))
     TSoftObjectPtr<UMaterialInterface> DiceMaterial;
 
     // Enum representing the type of dice (D6, D20, etc.)
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DiceData", meta = (Tooltip = "The type of dice (e.g., D6, D20)."))
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DiceData")
     EDiceType DiceType;
     
     // The class to use for this dice type (e.g., a subclass of AActor or UIndividualDice) (soft pointer)
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DiceData", meta = (Tooltip = "The class to spawn for this type of dice."))
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DiceData", meta = (AssetBundles="Game"))
     TSoftClassPtr<UObject> DiceClass;
 
     #if WITH_EDITOR
@@ -59,7 +64,10 @@ private:
     #if WITH_EDITOR
         // Internal function to automatically populate the map with its sockets when mesh is assigned
         void AutoFillFaceDetails();
-        
+
+        // Internal function that calculates the valid face normals
+        void AutoFillFaceNormals();
+    
         // Updates bHasValidMesh based on DiceMesh state
         void UpdateValidMeshStatus();
     #endif

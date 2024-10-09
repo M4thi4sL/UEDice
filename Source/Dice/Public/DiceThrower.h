@@ -4,6 +4,7 @@
 #include "GameFramework/Actor.h"
 #include "DiceThrower.generated.h"
 
+enum class EDieState : uint8;
 class UPDA_Dice;
 class ADiceActor;
 class UBoxComponent;
@@ -13,7 +14,12 @@ UCLASS()
 class DICE_API ADiceThrower : public AActor
 {
 	GENERATED_BODY()
-	
+
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnDieThrown, ADiceActor*, ThrownDie);
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnDieSpawned, ADiceActor*, SpawnedDie);
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDiceCleared);
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnTotalChanged, FText, NewResult);
+
 public:
 	// Sets default values for this actor's properties
 	ADiceThrower();
@@ -23,7 +29,6 @@ protected:
 	virtual void BeginPlay() override;
 
 public:
-
 	virtual void OnConstruction(const FTransform& Transform) override;
 
 	// Function to spawn dice
@@ -40,7 +45,22 @@ public:
 
 	// Function to reset and delete all spawned dice
 	UFUNCTION(BlueprintCallable, CallInEditor, Category = "Dice")
-	void ResetDice();
+	void ClearDice();
+
+	// Event that will broadcast when a die is thrown
+	UPROPERTY(BlueprintAssignable, Category = "Dice")
+	FOnDieThrown OnDieThrown;
+
+	UPROPERTY(BlueprintAssignable, Category = "Dice")
+	FOnDiceCleared OnDiceCleared;
+	
+	// Event dispatcher for broadcasting a new total result of the dice
+	UPROPERTY(BlueprintAssignable, Category = "Dice")
+	FOnTotalChanged OnResultChanged;
+	
+	// Event that will broadcast when a die is spawned
+	UPROPERTY(BlueprintAssignable, Category = "Dice")
+	FOnDieSpawned OnDieSpawned;
 	
 	// The arrow component for visualizing the throw direction
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Debug")
@@ -56,20 +76,17 @@ public:
 
 	// Force applied to launch the dice
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dice")
-	float LaunchForce = 1000.0f;
+	float LaunchForce = 100.0f;
 
 	// Box extent for spawning dice
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dice")
-	FVector SpawnBoxExtent = FVector(50.0f, 50.0f, 50.0f);
-
-
-
+	FVector SpawnBoxExtent = FVector(5.0f, 10.0f, 5.0f);
 
 private:
 	// Called when a dice broadcasts its result
 	UFUNCTION()
-	void OnDiceResult(FString Result);
-
+	void OnDiceResult(ADiceActor* Die, FText Result);
+	
 	// Array of spawned dice actors
 	TArray<ADiceActor*> SpawnedDice;
 

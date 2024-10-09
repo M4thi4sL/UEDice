@@ -1,4 +1,7 @@
 #include "DiceThrower.h"
+
+#include <string>
+
 #include "Components/ArrowComponent.h"
 #include "Components/BoxComponent.h"
 #include "PDA_Dice.h"
@@ -33,10 +36,6 @@ ADiceThrower::ADiceThrower()
 void ADiceThrower::BeginPlay()
 {
 	Super::BeginPlay();
-	
-	// Spawn and launch dice separately
-	SpawnDice();
-	//LaunchDice();
 }
 
 void ADiceThrower::OnConstruction(const FTransform& Transform)
@@ -70,8 +69,10 @@ void ADiceThrower::SpawnDice()
 				SpawnedDiceActor->DiceMeshComponent->WakeRigidBody(NAME_None);
 				
 				// Bind to the OnDiceResult event
-				SpawnedDiceActor->OnDiceResult.AddDynamic(this, &ADiceThrower::OnDiceResult);
+				SpawnedDiceActor->OnDieResult.AddDynamic(this, &ADiceThrower::OnDiceResult);
 				SpawnedDice.Add(SpawnedDiceActor);
+
+				OnDieSpawned.Broadcast(SpawnedDiceActor);
 				
 				LaunchDie(SpawnedDiceActor);
 
@@ -91,6 +92,7 @@ void ADiceThrower::LaunchDice()
 			// Launch the dice in the direction of the arrow with specified force
 			FVector LaunchDirection = DebugArrow->GetForwardVector();
 			SpawnedDiceActor->DiceMeshComponent->AddImpulse(LaunchDirection * LaunchForce, NAME_None, true);
+			SpawnedDiceActor->SetDieState(EDieState::Rolling);
 		}
 	}
 }
@@ -102,22 +104,67 @@ void ADiceThrower::LaunchDie(ADiceActor* Die)
 		// Launch the die in the direction of the arrow with specified force
 		FVector LaunchDirection = DebugArrow->GetForwardVector();
 		Die->DiceMeshComponent->AddImpulse(LaunchDirection * LaunchForce, NAME_None, true);
+
+		//broadcast  a die got thrown.
+		OnDieThrown.Broadcast(Die);
+
 	}
 }
 
 
 // Called when a dice broadcasts its result
-void ADiceThrower::OnDiceResult(FString Result)
+void ADiceThrower::OnDiceResult(ADiceActor* Die, FText Result)
 {
-	// Convert result to an integer and add to the total
-	int32 DiceValue = FCString::Atoi(*Result);
-	TotalResult += DiceValue;
+	// Variables to store numeric and non-numeric results
+	TArray<FString> NonNumericResults;
 
-	UE_LOG(LogTemp, Log, TEXT("Received Dice Result: %s, Total so far: %d"), *Result, TotalResult);
+	// Check if the FName result is numeric
+	FString ResultString = Result.ToString();
+	if (ResultString.IsNumeric())
+	{
+		// Convert to an integer and add to the total
+		int32 DiceValue = FCString::Atoi(*ResultString);
+		TotalResult += DiceValue;
+	}
+	else
+	{
+		// Store non-numeric result in an array
+		NonNumericResults.Add(ResultString);
+	}
+
+	// Format the result as "total, non-numeric values"
+	FString FinalResult;
+    
+	if (TotalResult > 0)
+	{
+		// Start with the total result
+		FinalResult = FString::FromInt(TotalResult);
+	}
+
+	if (NonNumericResults.Num() > 0)
+	{
+		// Add the non-numeric values, separated by commas
+		if (TotalResult > 0)
+		{
+			FinalResult += ", ";
+		}
+		FinalResult += FString::Join(NonNumericResults, TEXT(", "));
+	}
+
+	// Convert the final result to FText
+	FText FinalResultText = FText::FromString(FinalResult);
+
+	// Broadcast the formatted result
+	OnResultChanged.Broadcast(FinalResultText);
+
+	// Log the result and total so far
+	UE_LOG(LogTemp, Log, TEXT("Formatted Dice Result: %s"), *FinalResult);
 }
 
+
+
 // Reset and delete all spawned dice
-void ADiceThrower::ResetDice()
+void ADiceThrower::ClearDice()
 {
 	// Destroy all spawned dice actors
 	for (ADiceActor* DiceActor : SpawnedDice)
@@ -134,5 +181,8 @@ void ADiceThrower::ResetDice()
 	// Reset the total result
 	TotalResult = 0;
 
+	//Broadcast we have cleared the spawned dice.
+	OnDiceCleared.Broadcast();
 	UE_LOG(LogTemp, Log, TEXT("All spawned dice have been reset and destroyed."));
 }
+

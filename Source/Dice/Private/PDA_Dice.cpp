@@ -5,7 +5,13 @@
 #include "Engine/StaticMeshSocket.h"
 
 
+FPrimaryAssetId UPDA_Dice::GetPrimaryAssetId() const
+{
+    return FPrimaryAssetId("Dice", GetFName());
+}
 #if WITH_EDITOR
+
+
 void UPDA_Dice::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
 {
     Super::PostEditChangeProperty(PropertyChangedEvent);
@@ -17,9 +23,39 @@ void UPDA_Dice::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEve
     {
         // Update the status of bHasValidMesh
         UpdateValidMeshStatus();
-        // Auto-fill face details when DiceMesh is set or changed
+        // Autofill face details when DiceMesh is set or changed
         AutoFillFaceDetails();
+        // Autofill face normals
+        AutoFillFaceNormals();
     }
+}
+
+void UPDA_Dice::AutoFillFaceNormals()
+{
+    // Clear previous face normals
+    FaceNormals.Empty();
+
+    // Load the static mesh
+    UStaticMesh* Mesh = DiceMesh.LoadSynchronous();
+    // Iterate through all sockets that define the face normals
+    // Iterate through all sockets on the mesh
+    for (const UStaticMeshSocket* Socket : Mesh->Sockets)
+    {
+        // Retrieve the socket's relative rotation
+        FQuat SocketRotation = Socket->RelativeRotation.Quaternion();
+
+        // The normal is the forward vector of the socket's rotation
+        FVector FaceNormal = SocketRotation.GetUpVector();
+
+        // Add the calculated normal to the face normals array
+        FaceNormals.Add(FaceNormal);
+
+        // Optional: Log the normal for debugging
+        UE_LOG(LogTemp, Log, TEXT("Face Normal calculated from socket %s: %s"), *Socket->GetName(), *FaceNormal.ToString());
+    }
+
+    // Log the total number of face normals calculated
+    UE_LOG(LogTemp, Log, TEXT("Successfully auto-filled %d face normals."), FaceNormals.Num());
 }
 
 void UPDA_Dice::AutoFillFaceDetails()
@@ -50,7 +86,8 @@ void UPDA_Dice::AutoFillFaceDetails()
             // Populate FaceLabels with sorted socket names
             for (int32 i = 0; i < Sockets.Num(); ++i)
             {
-                FaceLabels.Add(Sockets[i]->SocketName.ToString(), Sockets[i]->SocketName.ToString());
+                FText Label = FText::FromString(Sockets[i]->SocketName.ToString());
+                FaceLabels.Add(Sockets[i]->SocketName.ToString(), Label);
             }
 
             // Log for confirmation

@@ -24,6 +24,14 @@ ADiceActor::ADiceActor()
 	DiceMeshComponent->BodyInstance.CustomSleepThresholdMultiplier = 15.0f;
 	DiceMeshComponent->SetLinearDamping(1.0f);
 	DiceMeshComponent->SetAngularDamping(1.0f);
+
+	//Replication
+	//SetReplicates(true);
+	//SetReplicatingMovement(true);
+	//DiceMeshComponent->SetIsReplicated(true);
+
+	// Die state
+	DieState = EDieState::Idle;
 }
 
 // Called when an instance of this class is constructed (editor or runtime)
@@ -33,6 +41,20 @@ void ADiceActor::OnConstruction(const FTransform& Transform)
 
 	// Initialize the dice with the data asset
 	InitializeDice();
+}
+
+EDieState ADiceActor::GetDieState() const
+{
+	return DieState;
+}
+
+void ADiceActor::SetDieState(const EDieState NewDieState)
+{
+	if (NewDieState != DieState)
+	{
+		DieState = NewDieState;
+		OnDieStateChanged.Broadcast(this, DieState);
+	}
 }
 
 // Initialize the dice actor based on the data asset
@@ -45,80 +67,45 @@ void ADiceActor::InitializeDice()
 		return;
 	}
 
-	// Get the streamable manager
-	FStreamableManager& Streamable = UAssetManager::GetStreamableManager();
-
-	// Asynchronously load the DiceData asset
-	UE_LOG(LogTemp, Log, TEXT("Requesting async load for DiceData: %s"), *DiceData.ToSoftObjectPath().ToString());
-	Streamable.RequestAsyncLoad(DiceData.ToSoftObjectPath(), FStreamableDelegate::CreateUObject(this, &ADiceActor::OnDiceDataLoaded));
-}
-
-void ADiceActor::OnDiceDataLoaded()
-{
-	// Now that DiceData is loaded, get the pointer
-	if (UPDA_Dice* LoadedData = DiceData.Get())
+	// Load the DiceData asset synchronously
+	UPDA_Dice* LoadedData = DiceData.LoadSynchronous();
+	if (!LoadedData)
 	{
-		UE_LOG(LogTemp, Log, TEXT("Successfully loaded DiceData: %s"), *DiceData.ToSoftObjectPath().ToString());
-
-		if (LoadedData)
-		{
-			// Get the streamable manager
-			FStreamableManager& Streamable = UAssetManager::GetStreamableManager();
-
-			// Asynchronously load the DiceMesh
-			UE_LOG(LogTemp, Log, TEXT("Requesting async load for DiceMesh: %s"), *LoadedData->DiceMesh.ToSoftObjectPath().ToString());
-			Streamable.RequestAsyncLoad(LoadedData->DiceMesh.ToSoftObjectPath(), FStreamableDelegate::CreateUObject(this, &ADiceActor::OnDiceMeshLoaded));
-		}
-		else
-		{
-			UE_LOG(LogTemp, Warning, TEXT("Failed to load DiceData! The asset might not exist or be corrupted."));
-		}
+		UE_LOG(LogTemp, Warning, TEXT("Failed to load DiceData! The asset might not exist or be corrupted."));
+		return;
 	}
+		// Store LoadedData in DiceData for further use
+	DiceData = LoadedData;
+	DiceMeshComponent->SetStaticMesh(LoadedData->DiceMesh.LoadSynchronous());
+	DiceMeshComponent->SetMaterial(0, LoadedData->DiceMaterial.LoadSynchronous());
 }
 
-void ADiceActor::OnDiceMeshLoaded()
-{
-	// Now that DiceMesh is loaded, set the mesh on the component
-	if (UPDA_Dice* LoadedData = DiceData.Get())
-	{
-		if (UStaticMesh* LoadedMesh = LoadedData->DiceMesh.Get())
-		{
-			UE_LOG(LogTemp, Log, TEXT("Successfully loaded DiceMesh: %s"), *LoadedData->DiceMesh.ToSoftObjectPath().ToString());
-
-			// Set the static mesh
-			DiceMeshComponent->SetStaticMesh(LoadedMesh);
-		}
-		else
-		{
-			UE_LOG(LogTemp, Warning, TEXT("Failed to load DiceMesh! The asset might not exist or be corrupted."));
-		}
-	}
-}
 
 void ADiceActor::HandlePhysicsSleep(UPrimitiveComponent* SleepingComponent, FName BoneName)
 {
 	// Physics simulation has gone to sleep; calculate and broadcast the dice result
-	FString DiceResult = CalculateDiceResult();
-	UE_LOG(LogTemp, Log, TEXT("Physics sleep detected. Dice result is: %s"), *DiceResult);
+	FText DiceResult = CalculateDiceResult();
+	UE_LOG(LogTemp, Log, TEXT("Physics sleep detected. Dice result is: %s"), *DiceResult.ToString());
 
+	SetDieState(EDieState::Stopped);
 	// Broadcast the result to any listeners
-	OnDiceResult.Broadcast(DiceResult);
+	OnDieResult.Broadcast(this, DiceResult);
 }
 
-FString ADiceActor::CalculateDiceResult() const
+FText ADiceActor::CalculateDiceResult() const
 {
 	// Check if the mesh and data are valid
 	if (!DiceMeshComponent || DiceData.IsNull())
 	{
 		UE_LOG(LogTemp, Warning, TEXT("DiceMeshComponent or DiceData is not valid."));
-		return FString("Invalid");
+		return FText::FromString("Invalid");
 	}
 
 	UPDA_Dice* LoadedData = DiceData.Get();
 	if (!LoadedData)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Failed to get DiceData."));
-		return FString("Invalid");
+		return FText::FromString("Invalid");
 	}
 
 	// Store the socket name with the highest position
@@ -144,13 +131,13 @@ FString ADiceActor::CalculateDiceResult() const
 	if (HighestSocketName != NAME_None && LoadedData->FaceLabels.Contains(HighestSocketName.ToString()))
 	{
 		// Get the label from the map
-		FString FaceLabel = LoadedData->FaceLabels[HighestSocketName.ToString()];
+		FText FaceLabel = LoadedData->FaceLabels[HighestSocketName.ToString()];
 		return FaceLabel;
 	}
 
 	// If no valid label found
 	UE_LOG(LogTemp, Warning, TEXT("No valid label found for the highest socket."));
-	return FString("Unknown");
+	return FText::FromString("Unknown");
 }
 void ADiceActor::BeginPlay()
 {

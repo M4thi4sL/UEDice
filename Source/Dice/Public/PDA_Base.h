@@ -15,15 +15,18 @@ class DICE_API UPDA_Base : public UPrimaryDataAsset
 	GENERATED_BODY()
 
 public:
+
+	virtual FPrimaryAssetId GetPrimaryAssetId() const override;
+	
 	// Thumbnail for the item
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Setup")
-	TSoftObjectPtr<UTexture> Icon;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Setup", meta = (AssetBundles="UI"))
+	TSoftObjectPtr<UTexture2D> Icon;
 	
 	// Name for the name.
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Setup")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Setup", meta = (AssetBundles="UI"))
 	FText Name;
 
 	// The description for this item.
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Setup")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Setup", meta = (AssetBundles="UI"))
 	FText Description;
 };

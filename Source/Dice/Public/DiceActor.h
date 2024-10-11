@@ -5,7 +5,7 @@
 #include "DiceActor.generated.h"
 
 class UPDA_Dice;
-
+class ADiceDecal;
 /**
  * A visual actor representation of a dice.
  */
@@ -29,6 +29,8 @@ class DICE_API ADiceActor : public AActor
 	// Delegate signature for broadcasting dice result
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnDieResult, ADiceActor*, Die,  FText, Result);
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnDieStateChanged,ADiceActor*, Die,  EDieState, NewDieState);
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnDieHover, ADiceActor*, Die );
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnDieHoverEnd, ADiceActor*, Die );
 
 public:
 	// Sets default values for this actor's properties
@@ -43,7 +45,13 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Dice")
 	void SetDieState(const EDieState NewDieState) ;
 
+	// Event handler for mouse hover start
+	UFUNCTION(BlueprintCallable, Category = "Dice")
+	void HandleBeginCursorOver(UPrimitiveComponent* TouchedComponent);
 
+	// Event handler for mouse hover end
+	UFUNCTION(BlueprintCallable, Category = "Dice")
+	void HandleEndCursorOver(UPrimitiveComponent* TouchedComponent);
 	
 	// Static mesh component for visualizing the dice
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Visual")
@@ -53,6 +61,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dice")
 	TSoftObjectPtr<UPDA_Dice> DiceData;
 
+	// Dice Decal
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dice")
+	TSoftClassPtr<ADiceDecal> DiceDecal;	
+	
 	// Initialize the dice actor based on the data asset
 	void InitializeDice();
 	
@@ -64,6 +76,11 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "Dice")
 	FOnDieStateChanged OnDieStateChanged;
 
+	UPROPERTY(BlueprintAssignable, Category = "Dice")
+	FOnDieHover OnDieHover;
+
+	UPROPERTY(BlueprintAssignable, Category = "Dice")
+	FOnDieHoverEnd OnDieHoverEnd;
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -78,6 +95,10 @@ private:
 
 	// Check if we got a valid dice result, eg: the dice didn't stop correctly.
 	bool CheckValidity() const;
+	
+	// Pointer to the currently spawned decal (to track whether it's spawned)
+	TWeakObjectPtr<ADiceDecal> SpawnedDecal;
+
 	
 	// The internal DieState
 	EDieState DieState;

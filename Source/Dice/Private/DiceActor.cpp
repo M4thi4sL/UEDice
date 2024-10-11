@@ -2,6 +2,7 @@
 #include "PDA_Dice.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
+#include "DiceDecal.h"
 #include "Engine/StreamableManager.h"
 #include "Engine/AssetManager.h"
 
@@ -15,6 +16,7 @@ ADiceActor::ADiceActor()
 	// Set default collision and physics properties
 	DiceMeshComponent->SetSimulatePhysics(true);
 	DiceMeshComponent->SetCollisionProfileName(TEXT("Dice"));
+	DiceMeshComponent->SetReceivesDecals(false);
 
 	// Bind to the sleep event of the physics simulation
 	DiceMeshComponent->OnComponentSleep.AddDynamic(this, &ADiceActor::HandlePhysicsSleep);
@@ -24,6 +26,11 @@ ADiceActor::ADiceActor()
 	DiceMeshComponent->BodyInstance.CustomSleepThresholdMultiplier = 15.0f;
 	DiceMeshComponent->SetLinearDamping(1.0f);
 	DiceMeshComponent->SetAngularDamping(1.0f);
+
+	// bind the the onhover and broadcast our custom delegate
+	DiceMeshComponent->OnBeginCursorOver.AddDynamic(this, &ADiceActor::HandleBeginCursorOver);
+	DiceMeshComponent->OnEndCursorOver.AddDynamic(this, &ADiceActor::HandleEndCursorOver);
+
 
 	//Replication
 	//SetReplicates(true);
@@ -169,4 +176,49 @@ bool ADiceActor::CheckValidity() const
 void ADiceActor::BeginPlay()
 {
 	Super::BeginPlay();
+}
+
+void ADiceActor::HandleBeginCursorOver(UPrimitiveComponent* TouchedComponent)
+{
+	if (!DiceDecal.IsNull())
+	{
+		// Load the class from the soft class pointer
+		UClass* DecalClass = DiceDecal.LoadSynchronous();
+
+		if (DecalClass)
+		{
+			// Spawn the decal actor at location (0, 0, 0) relative to the dice actor
+			FVector SpawnLocation = FVector(0.f, 0.f, 0.f); // Relative location
+			FRotator SpawnRotation = FRotator::ZeroRotator; // No rotation
+			FActorSpawnParameters SpawnParams;
+			SpawnParams.Owner = this; // Set the owner to the dice actor
+			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+			// Spawn the decal actor in the world using the loaded class
+			ADiceDecal* DecalActor = GetWorld()->SpawnActor<ADiceDecal>(DecalClass, SpawnLocation, SpawnRotation, SpawnParams);
+
+			if (DecalActor)
+			{
+				// Store the weak pointer reference
+				SpawnedDecal = DecalActor;
+
+				// Attach the decal to the dice actor with the equivalent of Blueprint setup
+				FAttachmentTransformRules AttachRules(EAttachmentRule::KeepRelative, EAttachmentRule::KeepWorld, EAttachmentRule::KeepRelative, true);
+				DecalActor->AttachToActor(this, AttachRules);
+			}
+		}
+	}
+	OnDieHover.Broadcast(this);
+}
+
+void ADiceActor::HandleEndCursorOver(UPrimitiveComponent* TouchedComponent)
+{
+	if (SpawnedDecal.IsValid())
+	{
+		// Destroy the decal actor
+		SpawnedDecal->Destroy();
+		SpawnedDecal = nullptr;  // Reset the pointer
+	}
+	
+	OnDieHoverEnd.Broadcast(this);
 }

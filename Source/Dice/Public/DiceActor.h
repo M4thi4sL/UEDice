@@ -16,7 +16,6 @@ enum class EDieState : uint8
 	Idle UMETA(DisplayName = "Idle"),
 	Rolling UMETA(DisplayName = "Rolling"),
 	Stopped UMETA(DisplayName = "Stopped"),
-	Locked UMETA(DisplayName = "Locked"),
 	Invalid UMETA(DisplayName = "Invalid")
 };
 
@@ -31,7 +30,8 @@ class DICE_API ADiceActor : public AActor
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnDieStateChanged,ADiceActor*, Die,  EDieState, NewDieState);
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnDieHover, ADiceActor*, Die );
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnDieHoverEnd, ADiceActor*, Die );
-
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnDieClicked, ADiceActor*, Die);
+	
 public:
 	// Sets default values for this actor's properties
 	ADiceActor();
@@ -52,6 +52,10 @@ public:
 	// Event handler for mouse hover end
 	UFUNCTION(BlueprintCallable, Category = "Dice")
 	void HandleEndCursorOver(UPrimitiveComponent* TouchedComponent);
+
+	// Event handler for mouse hover end
+	UFUNCTION(BlueprintCallable, Category = "Dice")
+	void HandleOnClicked(UPrimitiveComponent* TouchedComponent, FKey ButtonPressed);
 	
 	// Static mesh component for visualizing the dice
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Visual")
@@ -81,6 +85,10 @@ public:
 
 	UPROPERTY(BlueprintAssignable, Category = "Dice")
 	FOnDieHoverEnd OnDieHoverEnd;
+
+	UPROPERTY(BlueprintAssignable, Category = "Dice")
+	FOnDieClicked OnDieClicked;
+	
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -95,6 +103,8 @@ private:
 
 	// Check if we got a valid dice result, eg: the dice didn't stop correctly.
 	bool CheckValidity() const;
+
+
 	
 	// Pointer to the currently spawned decal (to track whether it's spawned)
 	TWeakObjectPtr<ADiceDecal> SpawnedDecal;

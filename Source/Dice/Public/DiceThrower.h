@@ -98,12 +98,15 @@ private:
 	// Called when a dice broadcasts its result
 	UFUNCTION()
 	void OnDiceResult(ADiceActor* Die, FText Result);
+
+	UFUNCTION()
+	void OnDieClicked( ADiceActor* Die);
 	
 	// Array of spawned dice actors
 	TArray<ADiceActor*> SpawnedDice;
-
-	// Sum of all results
-	int32 TotalResult = 0;
+	
+	// Map to keep track of the dices and their values.
+	TMap<ADiceActor*, FString> DiceResultsMap;
 
 	// Asynchronous callback when assets are loaded
 	void OnAssetsLoaded(UPDA_Dice* DiceData);

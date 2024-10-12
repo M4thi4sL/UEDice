@@ -105,6 +105,7 @@ void ADiceThrower::OnAssetsLoaded(UPDA_Dice* DiceData)
 
 				// Bind to the OnDiceResult event
 				SpawnedDiceActor->OnDieResult.AddDynamic(this, &ADiceThrower::OnDiceResult);
+				SpawnedDiceActor->OnDieClicked.AddDynamic(this, &ADiceThrower::RerollDice);
 				SpawnedDice.Add(SpawnedDiceActor);
 
 				// Broadcast that a die has been spawned
@@ -145,6 +146,7 @@ void ADiceThrower::LaunchDie(ADiceActor* Die)
 
 void ADiceThrower::RerollAll()
 {
+	DiceResultsMap.Empty();
 	for (ADiceActor* Dice : SpawnedDice)
 	{
 		if (Dice && Dice->DiceMeshComponent)
@@ -156,27 +158,16 @@ void ADiceThrower::RerollAll()
 			// Set the new location and rotation for the dice
 			Dice->SetActorLocationAndRotation(NewLocation, NewRotation, false, nullptr, ETeleportType::TeleportPhysics);
 
-			// Wake up the physics body to ensure it's ready for an impulse
-			Dice->DiceMeshComponent->WakeRigidBody(NAME_None);
-
-			// Apply the launch force (re-roll the dice)
-			FVector LaunchDirection = DebugArrow->GetForwardVector();
-			Dice->DiceMeshComponent->AddImpulse(LaunchDirection * LaunchForce, NAME_None, true);
-
-			// Optionally update the die state if you are tracking it
-			Dice->SetDieState(EDieState::Rolling);
+			RerollDice(Dice);
 		}
 	}
-	TotalResult = 0;
-	OnResultChanged.Broadcast(FText::FromString(FString::FromInt(TotalResult)));
+	OnResultChanged.Broadcast(FText::FromString(FString::FromInt(0)));
 }
 
 void ADiceThrower::RerollDice(ADiceActor* Die)
 {
 	if (Die->DiceMeshComponent)
 	{
-		//Todo properly expose to manager or move decal to manager
-		// in that case we only need 1. Are there instances where we would need to highlight multiple?
 		Die->HandleEndCursorOver(nullptr);
 		
 		// Randomize the position and rotation inside the spawn box
@@ -193,43 +184,59 @@ void ADiceThrower::RerollDice(ADiceActor* Die)
 		FVector LaunchDirection = DebugArrow->GetForwardVector();
 		Die->DiceMeshComponent->AddImpulse(LaunchDirection * LaunchForce, NAME_None, true);
 
+		// Random torque
+		FVector Torque = FVector::UpVector * FMath::RandRange(1000.0f, 2000.0f); 
+		Die->DiceMeshComponent->AddTorqueInRadians(Torque, NAME_None, true);
+
 		// Optionally update the die state if you are tracking it
 		Die->SetDieState(EDieState::Rolling);
 	}
 }
 
-// Called when a dice broadcasts its result
 void ADiceThrower::OnDiceResult(ADiceActor* Die, FText Result)
 {
-	// Variables to store numeric and non-numeric results
+	// Convert the result to a string
+	FString ResultString = Result.ToString();
+
+	// Update the result for this particular dice in the map (overwriting the old value)
+	DiceResultsMap.FindOrAdd(Die, ResultString);
+
+	// Recalculate the total and handle non-numeric results from the entire map
+	int32 TotalResult = 0;
 	TArray<FString> NonNumericResults;
 
-	// Check if the FName result is numeric
-	FString ResultString = Result.ToString();
-	if (ResultString.IsNumeric())
+	// Iterate through the map to calculate the total result
+	for (const TPair<ADiceActor*, FString>& DiceResult : DiceResultsMap)
 	{
-		// Convert to an integer and add to the total
-		int32 DiceValue = FCString::Atoi(*ResultString);
-		TotalResult += DiceValue;
-	}
-	else
-	{
-		// Store non-numeric result in an array
-		NonNumericResults.Add(ResultString);
+		const FString& DiceValueString = DiceResult.Value;
+
+		// Check if the result is numeric
+		if (DiceValueString.IsNumeric())
+		{
+			// Convert to an integer and add to the total
+			int32 DiceValue = FCString::Atoi(*DiceValueString);
+			TotalResult += DiceValue;
+		}
+		else
+		{
+			// Store non-numeric result in an array
+			NonNumericResults.Add(DiceValueString);
+		}
 	}
 
 	// Format the result as "total, non-numeric values"
 	FString FinalResult;
 
+	// If we have a numeric total, include it
 	if (TotalResult > 0)
 	{
-		// Start with the total result
 		FinalResult = FString::FromInt(TotalResult);
 	}
 
+	// Add non-numeric results if they exist
 	if (NonNumericResults.Num() > 0)
 	{
-		// Add the non-numeric values, separated by commas
+		// Add a separator if we have both numeric and non-numeric values
 		if (TotalResult > 0)
 		{
 			FinalResult += ", ";
@@ -237,14 +244,19 @@ void ADiceThrower::OnDiceResult(ADiceActor* Die, FText Result)
 		FinalResult += FString::Join(NonNumericResults, TEXT(", "));
 	}
 
-	// Convert the final result to FText
+	// Convert the final result to FText for broadcasting
 	FText FinalResultText = FText::FromString(FinalResult);
 
-	// Broadcast the formatted result
+	// Broadcast the updated result
 	OnResultChanged.Broadcast(FinalResultText);
 
-	// Log the result and total so far
-	UE_LOG(LogTemp, Log, TEXT("Formatted Dice Result: %s"), *FinalResult);
+	// Log the updated result
+	UE_LOG(LogTemp, Log, TEXT("Updated Dice Result: %s"), *FinalResult);
+}
+
+void ADiceThrower::OnDieClicked(ADiceActor* Die)
+{
+	RerollDice(Die);
 }
 
 // Reset and delete all spawned dice
@@ -261,14 +273,10 @@ void ADiceThrower::ClearDice()
 
 	// Clear the array of spawned dice references
 	SpawnedDice.Empty();
-
-	// Reset the total result
-	TotalResult = 0;
-
+	DiceResultsMap.Empty();
+	
 	// Broadcast that all dice have been cleared
 	OnDiceCleared.Broadcast();
-
-	UE_LOG(LogTemp, Log, TEXT("All spawned dice have been reset and destroyed."));
 }
 
 // Add a dice data asset to the array

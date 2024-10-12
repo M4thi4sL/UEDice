@@ -23,19 +23,19 @@ ADiceActor::ADiceActor()
 
 	//Tweak the default physics settings
 	DiceMeshComponent->BodyInstance.SleepFamily = ESleepFamily::Custom;
-	DiceMeshComponent->BodyInstance.CustomSleepThresholdMultiplier = 15.0f;
+	DiceMeshComponent->BodyInstance.CustomSleepThresholdMultiplier = 0.80f;
 	DiceMeshComponent->SetLinearDamping(1.0f);
 	DiceMeshComponent->SetAngularDamping(1.0f);
 
 	// bind the the onhover and broadcast our custom delegate
 	DiceMeshComponent->OnBeginCursorOver.AddDynamic(this, &ADiceActor::HandleBeginCursorOver);
 	DiceMeshComponent->OnEndCursorOver.AddDynamic(this, &ADiceActor::HandleEndCursorOver);
-
-
+	DiceMeshComponent->OnClicked.AddDynamic(this, &ADiceActor::HandleOnClicked);
+	
 	//Replication
-	//SetReplicates(true);
-	//SetReplicatingMovement(true);
-	//DiceMeshComponent->SetIsReplicated(true);
+	SetReplicates(true);
+	SetReplicatingMovement(true);
+	DiceMeshComponent->SetIsReplicated(true);
 
 	// Die state
 	DieState = EDieState::Idle;
@@ -180,7 +180,7 @@ void ADiceActor::BeginPlay()
 
 void ADiceActor::HandleBeginCursorOver(UPrimitiveComponent* TouchedComponent)
 {
-	if (!DiceDecal.IsNull())
+	if (!DiceDecal.IsNull()  && DieState == EDieState::Stopped)
 	{
 		// Load the class from the soft class pointer
 		UClass* DecalClass = DiceDecal.LoadSynchronous();
@@ -211,6 +211,8 @@ void ADiceActor::HandleBeginCursorOver(UPrimitiveComponent* TouchedComponent)
 	OnDieHover.Broadcast(this);
 }
 
+
+
 void ADiceActor::HandleEndCursorOver(UPrimitiveComponent* TouchedComponent)
 {
 	if (SpawnedDecal.IsValid())
@@ -221,4 +223,9 @@ void ADiceActor::HandleEndCursorOver(UPrimitiveComponent* TouchedComponent)
 	}
 	
 	OnDieHoverEnd.Broadcast(this);
+}
+
+void ADiceActor::HandleOnClicked(UPrimitiveComponent* TouchedComponent, FKey ButtonPressed)
+{
+	OnDieClicked.Broadcast(this);
 }

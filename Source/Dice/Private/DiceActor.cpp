@@ -3,8 +3,8 @@
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
 #include "DiceDecal.h"
-#include "Engine/StreamableManager.h"
-#include "Engine/AssetManager.h"
+#include "Kismet/GameplayStatics.h"
+#include "Sound/SoundCue.h"
 
 // Sets default values
 ADiceActor::ADiceActor()
@@ -17,7 +17,8 @@ ADiceActor::ADiceActor()
 	DiceMeshComponent->SetSimulatePhysics(true);
 	DiceMeshComponent->SetCollisionProfileName(TEXT("Dice"));
 	DiceMeshComponent->SetReceivesDecals(false);
-
+    DiceMeshComponent->SetNotifyRigidBodyCollision(true);
+	
 	// Bind to the sleep event of the physics simulation
 	DiceMeshComponent->OnComponentSleep.AddDynamic(this, &ADiceActor::HandlePhysicsSleep);
 
@@ -31,7 +32,8 @@ ADiceActor::ADiceActor()
 	DiceMeshComponent->OnBeginCursorOver.AddDynamic(this, &ADiceActor::HandleBeginCursorOver);
 	DiceMeshComponent->OnEndCursorOver.AddDynamic(this, &ADiceActor::HandleEndCursorOver);
 	DiceMeshComponent->OnClicked.AddDynamic(this, &ADiceActor::HandleOnClicked);
-	
+	DiceMeshComponent->OnComponentHit.AddDynamic(this, &ADiceActor::HandleOnHit);
+
 	//Replication
 	SetReplicates(true);
 	SetReplicatingMovement(true);
@@ -228,4 +230,17 @@ void ADiceActor::HandleEndCursorOver(UPrimitiveComponent* TouchedComponent)
 void ADiceActor::HandleOnClicked(UPrimitiveComponent* TouchedComponent, FKey ButtonPressed)
 {
 	OnDieClicked.Broadcast(this);
+}
+
+void ADiceActor::HandleOnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, FVector NormalImpulse, const FHitResult& Hit)
+{
+	float ImpactThreshold = .50f; // Set a threshold value, adjust based on testing
+
+	if (NormalImpulse.Size() > ImpactThreshold)
+	{
+		if (DiceHitSound)
+		{
+			UGameplayStatics::PlaySoundAtLocation(this, DiceHitSound, GetActorLocation());
+		}
+	}
 }

@@ -70,7 +70,11 @@ public:
 	TSoftClassPtr<ADiceDecal> DiceDecal;	
 	
 	// Initialize the dice actor based on the data asset
+	UFUNCTION(BlueprintCallable, Category = "Dice")
 	void InitializeDice();
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Audio")
+	USoundBase* DiceHitSound;
 	
 	// Event dispatcher for broadcasting the dice result
 	UPROPERTY(BlueprintAssignable, Category = "Dice")
@@ -97,7 +101,10 @@ private:
 	// Handler for when the physics simulation goes to sleep
 	UFUNCTION()
 	void HandlePhysicsSleep(UPrimitiveComponent* SleepingComponent, FName BoneName);
-	
+
+	UFUNCTION()
+	void HandleOnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, FVector NormalImpulse, const FHitResult& Hit);
+
 	// Calculate the dice result based on the up face
 	FText CalculateDiceResult() const;
 

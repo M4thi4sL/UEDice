@@ -1,13 +1,16 @@
 # UEDice
- DiceSystem made in Unreal Engine 5.4
+ DiceSystem made in c++ in Unreal Engine 5.4.
+ The core featurse of the system are written in c++, the rest (UI, GM, PC) is currently still in BP as these would most likely be changed by the end-user to suit their needs. 
 
 # Features
-* Physics-based dice rolling: The dice rolls and interacts with the environment using Unreal Engine's physics system.
-* Collision and hit detection: The dice registers significant hits with surfaces (like a table), and can respond with sounds or events.
+* Physics-based dice rolling. Launch dice based on the arrow in BP_DiceThrower. 
+* Event-based: When the dice comes to rest, an event broadcasts the result of the roll.
 * Customizable dice data: The dice's appearance (mesh and material) and face labels are customizable using data assets.
-* Sound on dice impact: A sound effect plays when the dice hits a surface with sufficient force.
-* Events on dice state change: When the dice comes to rest, an event broadcasts the result of the roll.
-* Hover and click interactions: The dice responds to cursor hover and click actions, broadcasting relevant events.
+* The dice-thrower keeps track of the global total.
+* Tracks invalid dice rolls, eg a coin that lands on it side, or a dice that is indetermined. 
+* Hover and click interactions: The dice responds to cursor hover and click actions, clicking rerolls the dice
+
+ 
 
  
 ![DiceSystem](https://github.com/user-attachments/assets/144ccbc2-6b5c-478f-8368-e4ccf23f808b)

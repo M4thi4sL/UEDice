@@ -1,8 +1,6 @@
 # UEDice
  DiceSystem made in Unreal Engine 5.4
 
-his repository contains the implementation of a custom DiceActor in Unreal Engine 4/5. The DiceActor is designed for use in games or simulations where dice interactions are required, featuring physics-based collisions, custom events, and sound integration.
-
 # Features
 * Physics-based dice rolling: The dice rolls and interacts with the environment using Unreal Engine's physics system.
 * Collision and hit detection: The dice registers significant hits with surfaces (like a table), and can respond with sounds or events.

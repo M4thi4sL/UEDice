@@ -9,8 +9,9 @@
 * The dice-thrower keeps track of the global total.
 * Tracks invalid dice rolls, eg a coin that lands on it side, or a dice that is indetermined. 
 * Hover and click interactions: The dice responds to cursor hover and click actions, clicking rerolls the dice
-
- 
-
  
 ![DiceSystem](https://github.com/user-attachments/assets/144ccbc2-6b5c-478f-8368-e4ccf23f808b)
+
+
+https://github.com/user-attachments/assets/78429fbc-3cc4-4e7a-b3cc-bb52ad559043
+

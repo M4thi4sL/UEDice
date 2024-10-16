@@ -168,6 +168,9 @@ void ADiceThrower::RerollDice(ADiceActor* Die)
 {
 	if (Die->DiceMeshComponent)
 	{
+		// Remove old result from DiceResultsMap
+    	DiceResultsMap.Remove(Die);
+ 
 		Die->HandleEndCursorOver(nullptr);
 		
 		// Randomize the position and rotation inside the spawn box

@@ -1,0 +1,17 @@
+{
+    "Version": "1.2",
+    "Data": {
+        "Source": "e:\\_github\\dice\\uedice\\plugins\\uedice\\uedice\\intermediate\\build\\win64\\unrealeditor\\inc\\uedice\\uht\\pda_dice.gen.cpp",
+        "ProvidedModule": "",
+        "PCH": "e:\\_github\\dice\\uedice\\intermediate\\build\\win64\\x64\\diceeditor\\development\\unrealed\\sharedpch.unrealed.project.valapi.cpp20.h.pch",
+        "Includes": [
+            "e:\\_github\\dice\\uedice\\plugins\\uedice\\uedice\\intermediate\\build\\win64\\x64\\unrealeditor\\development\\uedice\\definitions.uedice.h",
+            "e:\\_github\\dice\\uedice\\plugins\\uedice\\uedice\\source\\uedice\\public\\pda_dice.h",
+            "e:\\_github\\dice\\uedice\\plugins\\uedice\\uedice\\source\\uedice\\public\\pda_base.h",
+            "e:\\_github\\dice\\uedice\\plugins\\uedice\\uedice\\intermediate\\build\\win64\\unrealeditor\\inc\\uedice\\uht\\pda_base.generated.h",
+            "e:\\_github\\dice\\uedice\\plugins\\uedice\\uedice\\intermediate\\build\\win64\\unrealeditor\\inc\\uedice\\uht\\pda_dice.generated.h"
+        ],
+        "ImportedModules": [],
+        "ImportedHeaderUnits": []
+    }
+}

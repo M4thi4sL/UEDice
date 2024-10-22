@@ -1,0 +1,15 @@
+{
+    "Version": "1.2",
+    "Data": {
+        "Source": "e:\\_github\\dice\\uedice\\plugins\\uedice\\uedice\\intermediate\\build\\win64\\unrealeditor\\inc\\uedice\\uht\\stringutils.gen.cpp",
+        "ProvidedModule": "",
+        "PCH": "e:\\_github\\dice\\uedice\\intermediate\\build\\win64\\x64\\diceeditor\\development\\unrealed\\sharedpch.unrealed.project.valapi.cpp20.h.pch",
+        "Includes": [
+            "e:\\_github\\dice\\uedice\\plugins\\uedice\\uedice\\intermediate\\build\\win64\\x64\\unrealeditor\\development\\uedice\\definitions.uedice.h",
+            "e:\\_github\\dice\\uedice\\plugins\\uedice\\uedice\\source\\uedice\\public\\stringutils.h",
+            "e:\\_github\\dice\\uedice\\plugins\\uedice\\uedice\\intermediate\\build\\win64\\unrealeditor\\inc\\uedice\\uht\\stringutils.generated.h"
+        ],
+        "ImportedModules": [],
+        "ImportedHeaderUnits": []
+    }
+}

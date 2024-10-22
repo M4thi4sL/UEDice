@@ -1,5 +1,21 @@
 {
 	"RemapUnityFiles": 
 	{
+		"Module.UEDice.cpp.obj": [
+			"DiceActor.gen.cpp.obj",
+			"DiceDecal.gen.cpp.obj",
+			"DiceThrower.gen.cpp.obj",
+			"PDA_Base.gen.cpp.obj",
+			"PDA_Dice.gen.cpp.obj",
+			"StringUtils.gen.cpp.obj",
+			"UEDice.init.gen.cpp.obj",
+			"DiceDecal.cpp.obj",
+			"DiceThrower.cpp.obj",
+			"PDA_Base.cpp.obj",
+			"PDA_Dice.cpp.obj",
+			"StringUtils.cpp.obj",
+			"UEDice.cpp.obj",
+			"DiceActor.cpp.obj"
+		]
 	}
 }

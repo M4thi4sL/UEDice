@@ -20,6 +20,7 @@ ADiceActor::ADiceActor()
     DiceMeshComponent->SetNotifyRigidBodyCollision(true);
 	
 	// Bind to the sleep event of the physics simulation
+	DiceMeshComponent->BodyInstance.bGenerateWakeEvents = true;
 	DiceMeshComponent->OnComponentSleep.AddDynamic(this, &ADiceActor::HandlePhysicsSleep);
 
 	//Tweak the default physics settings

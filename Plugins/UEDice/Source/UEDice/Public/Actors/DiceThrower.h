@@ -18,46 +18,55 @@ class ADiceActor;
 class UBoxComponent;
 class UArrowComponent;
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnDieThrown, ADiceActor*, ThrownDie);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnDieSpawned, ADiceActor*, SpawnedDie);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDiceCleared);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnTotalChanged, FText, NewResult);
+
 UCLASS()
 class UEDICE_API ADiceThrower : public AActor
 {
 	GENERATED_BODY()
 
-	// Declare various dynamic multicast delegates for broadcasting events
-	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnDieThrown, ADiceActor*, ThrownDie);
-	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnDieSpawned, ADiceActor*, SpawnedDie);
-	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDiceCleared);
-	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnTotalChanged, FText, NewResult);
-
 public:
-	// Sets default values for this actor's properties
 	ADiceThrower();
 
-protected:
-	// Called when the game starts or when spawned
-	virtual void BeginPlay() override;
+	/** Event that will broadcast when a die is thrown */
+	UPROPERTY(BlueprintAssignable, Category = "Dice")
+	FOnDieThrown OnDieThrown;
 
-public:
+	UPROPERTY(BlueprintAssignable, Category = "Dice")
+	FOnDiceCleared OnDiceCleared;
+
+	/** Event dispatcher for broadcasting a new total result of the dice */
+	UPROPERTY(BlueprintAssignable, Category = "Dice")
+	FOnTotalChanged OnResultChanged;
+
+	/** Event that will broadcast when a die is spawned */
+	UPROPERTY(BlueprintAssignable, Category = "Dice")
+	FOnDieSpawned OnDieSpawned;
+
+protected:
+	virtual void BeginPlay() override;
 	virtual void OnConstruction(const FTransform& Transform) override;
 
-	// Function to spawn dice
+	/** Function to spawn dice */
 	UFUNCTION(BlueprintCallable, CallInEditor, Category = "Dice")
 	void SpawnDice();
 
-	// Function to launch a single die
+	/** Function to launch a single die */
 	UFUNCTION(BlueprintCallable, CallInEditor, Category = "Dice")
 	void LaunchDie(ADiceActor* Die);
 
-	// Reroll the existing spawned dice.
+	/** Reroll the existing spawned dice. */
 	UFUNCTION(BlueprintCallable, CallInEditor, Category = "Dice")
 	void RerollAll();
 
-	// Reroll the existing spawned dice.
+	/** Reroll the existing spawned dice.*/
 	UFUNCTION(BlueprintCallable, CallInEditor, Category = "Dice")
 	void RerollDice(ADiceActor* Die);
 	
-	
-	// Function to reset and delete all spawned dice
+	/** Function to reset and delete all spawned dice*/
 	UFUNCTION(BlueprintCallable, CallInEditor, Category = "Dice")
 	void ClearDice();
 
@@ -66,56 +75,41 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Dice")
 	void RemoveDice(UPDA_Dice* Dice);
-
-	// Event that will broadcast when a die is thrown
-	UPROPERTY(BlueprintAssignable, Category = "Dice")
-	FOnDieThrown OnDieThrown;
-
-	UPROPERTY(BlueprintAssignable, Category = "Dice")
-	FOnDiceCleared OnDiceCleared;
-
-	// Event dispatcher for broadcasting a new total result of the dice
-	UPROPERTY(BlueprintAssignable, Category = "Dice")
-	FOnTotalChanged OnResultChanged;
-
-	// Event that will broadcast when a die is spawned
-	UPROPERTY(BlueprintAssignable, Category = "Dice")
-	FOnDieSpawned OnDieSpawned;
-
-	// The arrow component for visualizing the throw direction
+	
+	/** The arrow component for visualizing the throw direction*/
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Debug")
 	UArrowComponent* DebugArrow;
 
-	// Box component for visualizing the spawn area
+	/** Box component for visualizing the spawn area*/
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Debug")
 	UBoxComponent* SpawnBox;
 
-	// Array of dice data assets
+	/** Array of dice data assets*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dice")
 	TArray<UPDA_Dice*> DiceArray;
 
-	// Force applied to launch the dice
+	/** Force applied to launch the dice*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dice")
 	float LaunchForce = 100.0f;
 
-	// Box extent for spawning dice
+	/** Box extent for spawning dice*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dice")
 	FVector SpawnBoxExtent = FVector(5.0f, 10.0f, 5.0f);
 
 private:
-	// Called when a dice broadcasts its result
+
 	UFUNCTION()
-	void OnDiceResult(ADiceActor* Die, FText Result);
+	void OnDiceResult(ADiceActor* Die, const FText& Result);
 
 	UFUNCTION()
 	void OnDieClicked( ADiceActor* Die);
 	
-	// Array of spawned dice actors
+	/** Array of spawned dice actors*/
 	TArray<ADiceActor*> SpawnedDice;
 	
-	// Map to keep track of the dices and their values.
+	/** Map to keep track of the dices and their values.*/
 	TMap<ADiceActor*, FString> DiceResultsMap;
 
-	// Asynchronous callback when assets are loaded
+	/** Asynchronous callback when assets are loaded */
 	void OnAssetsLoaded(UPDA_Dice* DiceData);
 };

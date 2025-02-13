@@ -27,25 +27,22 @@ enum class EDieState : uint8
 };
 
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnDieResult, ADiceActor*, Die, const FText&, Result);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnDieStateChanged,ADiceActor*, Die,  EDieState, NewDieState);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnDieHover, ADiceActor*, Die );
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnDieHoverEnd, ADiceActor*, Die );
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnDieClicked, ADiceActor*, Die);
+
 UCLASS(BlueprintType)
 class UEDICE_API ADiceActor : public AActor
 {
 	GENERATED_BODY()
 	
-	// Delegate signature for broadcasting dice result
-	DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnDieResult, ADiceActor*, Die,  FText, Result);
-	DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnDieStateChanged,ADiceActor*, Die,  EDieState, NewDieState);
-	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnDieHover, ADiceActor*, Die );
-	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnDieHoverEnd, ADiceActor*, Die );
-	DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnDieClicked, ADiceActor*, Die);
-	
+
 public:
 	// Sets default values for this actor's properties
 	ADiceActor();
-
-	// Called when an instance of this class is constructed (editor or runtime)
-	virtual void OnConstruction(const FTransform& Transform) override;
-
+	
 	UFUNCTION(BlueprintPure, Category = "Dice")
 	EDieState GetDieState() const;
 

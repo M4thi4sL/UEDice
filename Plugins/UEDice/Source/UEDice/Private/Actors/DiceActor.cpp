@@ -51,15 +51,6 @@ ADiceActor::ADiceActor()
 	DieState = EDieState::Idle;
 }
 
-// Called when an instance of this class is constructed (editor or runtime)
-void ADiceActor::OnConstruction(const FTransform& Transform)
-{
-	Super::OnConstruction(Transform);
-
-	// Initialize the dice with the data asset
-	InitializeDice();
-}
-
 EDieState ADiceActor::GetDieState() const
 {
 	return DieState;
@@ -186,6 +177,8 @@ bool ADiceActor::CheckValidity() const
 void ADiceActor::BeginPlay()
 {
 	Super::BeginPlay();
+	
+	InitializeDice();
 }
 
 void ADiceActor::HandleBeginCursorOver(UPrimitiveComponent* TouchedComponent)
@@ -242,7 +235,7 @@ void ADiceActor::HandleOnClicked(UPrimitiveComponent* TouchedComponent, FKey But
 
 void ADiceActor::HandleOnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, FVector NormalImpulse, const FHitResult& Hit)
 {
-	float ImpactThreshold = .50f; // Set a threshold value, adjust based on testing
+	const float ImpactThreshold = .50f;
 
 	if (NormalImpulse.Size() > ImpactThreshold)
 	{

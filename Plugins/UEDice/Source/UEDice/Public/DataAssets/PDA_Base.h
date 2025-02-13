@@ -23,15 +23,19 @@ public:
 
 	virtual FPrimaryAssetId GetPrimaryAssetId() const override;
 	
-	// Thumbnail for the item
+	/** Thumbnail for the item*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Setup", meta = (AssetBundles="UI"))
 	TSoftObjectPtr<UTexture2D> Icon;
 	
-	// Name for the name.
+	/** Name for the name.*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Setup", meta = (AssetBundles="UI"))
 	FText Name;
 
-	// The description for this item.
+	/** The description for this item.*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Setup", meta = (AssetBundles="UI"))
 	FText Description;
+
+	/** The index is what gets used when requesting a sorted primary asset list */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Setup", AssetRegistrySearchable)
+	int32 Index;
 };

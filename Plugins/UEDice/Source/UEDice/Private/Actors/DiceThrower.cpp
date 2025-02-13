@@ -16,42 +16,34 @@
 #include "Kismet/KismetMathLibrary.h"
 #include "Engine/AssetManager.h"
 
-// Sets default values
 ADiceThrower::ADiceThrower()
 {
-	// Create and set the debug arrow component as a child of the root
 	DebugArrow = CreateDefaultSubobject<UArrowComponent>(TEXT("DebugArrow"));
 	RootComponent = DebugArrow;
 
-	// Create and set the box component for visualizing the spawn area
 	SpawnBox = CreateDefaultSubobject<UBoxComponent>(TEXT("SpawnBox"));
 	SpawnBox->SetupAttachment(RootComponent);
 
-	// Set default box extent and make it visible in the editor
 	SpawnBox->SetBoxExtent(SpawnBoxExtent);
 	SpawnBox->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	SpawnBox->SetVisibility(true);
 	SpawnBox->SetHiddenInGame(true);
 
-	// Default values
 	LaunchForce = 150.0f;
 	SpawnBoxExtent = FVector(5.0f, 10.0f, 5.0f);
 }
 
-// Called when the game starts or when spawned
 void ADiceThrower::BeginPlay()
 {
 	Super::BeginPlay();
 }
 
-// Called when the construction script runs
 void ADiceThrower::OnConstruction(const FTransform& Transform)
 {
 	Super::OnConstruction(Transform);
 	SpawnBox->SetBoxExtent(SpawnBoxExtent);
 }
 
-// Spawn all dice specified in the DiceArray using Asynchronous Asset Loading
 void ADiceThrower::SpawnDice()
 {
 	for (UPDA_Dice* DiceData : DiceArray)
@@ -77,7 +69,6 @@ void ADiceThrower::SpawnDice()
 	}
 }
 
-// Callback function after asynchronous asset loading
 void ADiceThrower::OnAssetsLoaded(UPDA_Dice* DiceData)
 {
 	if (DiceData)
@@ -144,7 +135,6 @@ void ADiceThrower::OnAssetsLoaded(UPDA_Dice* DiceData)
     }
 }
 
-// Launch a single die
 void ADiceThrower::LaunchDie(ADiceActor* Die)
 {
 	if (Die)
@@ -173,9 +163,8 @@ void ADiceThrower::RerollAll()
 	{
 		if (Dice && Dice->DiceMeshComponent)
 		{
-			// Randomize the position and rotation inside the spawn box
-			FVector NewLocation = UKismetMathLibrary::RandomPointInBoundingBox(GetActorLocation(), SpawnBoxExtent);
-			FRotator NewRotation = UKismetMathLibrary::RandomRotator(true);
+			const FVector NewLocation = UKismetMathLibrary::RandomPointInBoundingBox(GetActorLocation(), SpawnBoxExtent);
+			const FRotator NewRotation = UKismetMathLibrary::RandomRotator(true);
 
 			// Set the new location and rotation for the dice
 			Dice->SetActorLocationAndRotation(NewLocation, NewRotation, false, nullptr, ETeleportType::TeleportPhysics);
@@ -190,38 +179,30 @@ void ADiceThrower::RerollDice(ADiceActor* Die)
 {
 	if (Die->DiceMeshComponent)
 	{
-		// Remove old result from DiceResultsMap
     	DiceResultsMap.Remove(Die);
  
 		Die->HandleEndCursorOver(nullptr);
 		
-		// Randomize the position and rotation inside the spawn box
-		FVector NewLocation = UKismetMathLibrary::RandomPointInBoundingBox(GetActorLocation(), SpawnBoxExtent);
-		FRotator NewRotation = UKismetMathLibrary::RandomRotator(true);
+		const FVector NewLocation = UKismetMathLibrary::RandomPointInBoundingBox(GetActorLocation(), SpawnBoxExtent);
+		const FRotator NewRotation = UKismetMathLibrary::RandomRotator(true);
 
-		// Set the new location and rotation for the dice
 		Die->SetActorLocationAndRotation(NewLocation, NewRotation, false, nullptr, ETeleportType::TeleportPhysics);
-
-		// Wake up the physics body to ensure it's ready for an impulse
 		Die->DiceMeshComponent->WakeRigidBody(NAME_None);
 
-		// Apply the launch force (re-roll the dice)
-		FVector LaunchDirection = DebugArrow->GetForwardVector();
+		const FVector LaunchDirection = DebugArrow->GetForwardVector();
 		Die->DiceMeshComponent->AddImpulse(LaunchDirection * LaunchForce, NAME_None, true);
 
-		// Random torque
-		FVector Torque = FVector::UpVector * FMath::RandRange(1000.0f, 2000.0f); 
+		const FVector Torque = FVector::UpVector * FMath::RandRange(1000.0f, 2000.0f); 
 		Die->DiceMeshComponent->AddTorqueInRadians(Torque, NAME_None, true);
 
-		// Optionally update the die state if you are tracking it
 		Die->SetDieState(EDieState::Rolling);
 	}
 }
 
-void ADiceThrower::OnDiceResult(ADiceActor* Die, FText Result)
+void ADiceThrower::OnDiceResult(ADiceActor* Die, const FText& Result)
 {
 	// Convert the result to a string
-	FString ResultString = Result.ToString();
+	const FString ResultString = Result.ToString();
 
 	// Update the result for this particular dice in the map (overwriting the old value)
 	DiceResultsMap.FindOrAdd(Die, ResultString);
@@ -284,7 +265,6 @@ void ADiceThrower::OnDieClicked(ADiceActor* Die)
 	RerollDice(Die);
 }
 
-// Reset and delete all spawned dice
 void ADiceThrower::ClearDice()
 {
 	// Destroy all spawned dice actors
@@ -304,7 +284,6 @@ void ADiceThrower::ClearDice()
 	OnDiceCleared.Broadcast();
 }
 
-// Add a dice data asset to the array
 void ADiceThrower::AddDice(UPDA_Dice* Dice)
 {
 	if (Dice)
@@ -313,7 +292,6 @@ void ADiceThrower::AddDice(UPDA_Dice* Dice)
 	}
 }
 
-// Remove a dice data asset from the array
 void ADiceThrower::RemoveDice(UPDA_Dice* Dice)
 {
 	if (Dice)

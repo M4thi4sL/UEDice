@@ -8,32 +8,17 @@
 #include "Actors/DiceDecal.h"
 #include "Components/DecalComponent.h"
 
-// Sets default values
 ADiceDecal::ADiceDecal()
 {
 	PrimaryActorTick.bCanEverTick = false;
 
-	// Create the scene root component (used as a dummy root)
 	SceneRoot = CreateDefaultSubobject<USceneComponent>(TEXT("SceneRoot"));
 	RootComponent = SceneRoot;
 
-	// Create the decal component and attach it to the scene root
 	Decal = CreateDefaultSubobject<UDecalComponent>(TEXT("Decal"));
 	Decal->SetupAttachment(SceneRoot); 
 	Decal->DecalSize = FVector(2.5f, 2.5f, 2.5f);
-	// Rotate the decal 90 degrees on the X-axis
-	FRotator DecalRotation = FRotator(90.f, 0.0f, 0.f);
+
+	const FRotator DecalRotation = FRotator(90.f, 0.0f, 0.f);
 	Decal->SetRelativeRotation(DecalRotation);
-}
-
-// Called when the game starts or when spawned
-void ADiceDecal::BeginPlay()
-{
-	Super::BeginPlay();
-}
-
-// Called every frame
-void ADiceDecal::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
 }

@@ -40,6 +40,8 @@ public class UEDice : ModuleRules
 				"Engine",
 				"Slate",
 				"SlateCore",
+				"UMG",
+				"Slate"
 				// ... add private dependencies that you statically link with here ...	
 			}
 			);

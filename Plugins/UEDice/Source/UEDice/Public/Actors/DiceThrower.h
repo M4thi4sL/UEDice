@@ -21,7 +21,7 @@ class UArrowComponent;
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnDieThrown, ADiceActor*, ThrownDie);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnDieSpawned, ADiceActor*, SpawnedDie);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDiceCleared);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnTotalChanged, FText, NewResult);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnTotalChanged, const FText&, NewResult);
 
 UCLASS()
 class UEDICE_API ADiceThrower : public AActor
@@ -46,10 +46,6 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "Dice")
 	FOnDieSpawned OnDieSpawned;
 
-protected:
-	virtual void BeginPlay() override;
-	virtual void OnConstruction(const FTransform& Transform) override;
-
 	/** Function to spawn dice */
 	UFUNCTION(BlueprintCallable, CallInEditor, Category = "Dice")
 	void SpawnDice();
@@ -65,16 +61,20 @@ protected:
 	/** Reroll the existing spawned dice.*/
 	UFUNCTION(BlueprintCallable, CallInEditor, Category = "Dice")
 	void RerollDice(ADiceActor* Die);
-	
+
 	/** Function to reset and delete all spawned dice*/
 	UFUNCTION(BlueprintCallable, CallInEditor, Category = "Dice")
 	void ClearDice();
 
 	UFUNCTION(BlueprintCallable, Category = "Dice")
-	void AddDice(UPDA_Dice* Dice);
+	void AddDice(const FPrimaryAssetId DiceId);
 
 	UFUNCTION(BlueprintCallable, Category = "Dice")
-	void RemoveDice(UPDA_Dice* Dice);
+	void RemoveDice(const FPrimaryAssetId DiceId);
+	
+protected:
+	virtual void BeginPlay() override;
+	virtual void OnConstruction(const FTransform& Transform) override;
 	
 	/** The arrow component for visualizing the throw direction*/
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Debug")
@@ -86,7 +86,7 @@ protected:
 
 	/** Array of dice data assets*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dice")
-	TArray<UPDA_Dice*> DiceArray;
+	TArray<FPrimaryAssetId> DiceArray;
 
 	/** Force applied to launch the dice*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dice")
@@ -111,5 +111,5 @@ private:
 	TMap<ADiceActor*, FString> DiceResultsMap;
 
 	/** Asynchronous callback when assets are loaded */
-	void OnAssetsLoaded(UPDA_Dice* DiceData);
+	void OnAssetsLoaded(const FPrimaryAssetId&  LoadedAssetId);
 };

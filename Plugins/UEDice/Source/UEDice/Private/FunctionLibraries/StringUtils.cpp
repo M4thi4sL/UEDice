@@ -23,3 +23,19 @@ FString UStringUtils::PadInteger(const int32 Number, const int32 MinWidth, const
 
 	return NumberStr;
 }
+
+FText UStringUtils::GetEnumAsText(const UEnum* EnumType, uint8 EnumValue)
+{
+	if (!EnumType) return FText::GetEmpty();
+
+	// Convert Enum to String
+	FString EnumString = EnumType->GetNameStringByValue(EnumValue);
+
+	FString LeftString, RightString;
+	if (EnumString.Split(TEXT("::"), &LeftString, &RightString))
+	{
+		return FText::FromString(RightString);
+	}
+
+	return FText::FromString(EnumString);
+}

@@ -48,7 +48,7 @@ public:
     TMap<FString, FText> FaceLabels;
 
     /** Debug data, stores the normal of the faces of the die. This date gets then used when deciding if the die is in a valid position*/
-    UPROPERTY(VisibleAnywhere , BlueprintReadOnly, Category = "DiceData")
+    UPROPERTY(VisibleAnywhere , BlueprintReadOnly, Category = "DiceData", AdvancedDisplay  )
     TArray<FVector> FaceNormals;
     
     /** The mesh to use for rendering the dice (soft pointer) */
@@ -63,9 +63,9 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DiceData")
     EDiceType DiceType;
     
-    /** The class to use for this dice type (e.g., a subclass of AActor or UIndividualDice) (soft pointer) */
+    /** The class to use for this dice type (usually a subclass of AACtor) (soft pointer) */
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DiceData", meta = (AssetBundles="Game"))
-    TSoftClassPtr<UObject> DiceClass;
+    TSoftClassPtr<AActor> DiceClass;
 
     #if WITH_EDITOR
         /** Called when a property is changed in the editor */

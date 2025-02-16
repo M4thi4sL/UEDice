@@ -11,6 +11,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
 #include "Actors/DiceDecal.h"
+#include "Engine/AssetManager.h"
 #include "Kismet/GameplayStatics.h"
 
 // Sets default values
@@ -69,23 +70,24 @@ void ADiceActor::SetDieState(const EDieState NewDieState)
 void ADiceActor::InitializeDice()
 {
 	// Check if the DiceData is valid
-	if (DiceData.IsNull())
+	if (!DiceId.IsValid())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("DiceData is not set!"));
+		UE_LOG(LogTemp, Error, TEXT("DiceId is not set!"));
 		return;
 	}
-
-	// Load the DiceData asset synchronously
-	UPDA_Dice* LoadedData = DiceData.LoadSynchronous();
-	if (!LoadedData)
+	
+	UAssetManager& AssetManager = UAssetManager::Get();
+	if (const UPDA_Dice* DiceData = Cast<UPDA_Dice>(AssetManager.GetPrimaryAssetObject(DiceId)))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Failed to load DiceData! The asset might not exist or be corrupted."));
-		return;
+		DiceMeshComponent->SetStaticMesh(DiceData->DiceMesh.Get());
+		DiceMeshComponent->SetMaterial(0, DiceData->DiceMaterial.Get());	
 	}
-		// Store LoadedData in DiceData for further use
-	DiceData = LoadedData;
-	DiceMeshComponent->SetStaticMesh(LoadedData->DiceMesh.LoadSynchronous());
-	DiceMeshComponent->SetMaterial(0, LoadedData->DiceMaterial.LoadSynchronous());
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("DiceActor: Object from DiceId was not valid, using fallback method"))
+		DiceMeshComponent->SetStaticMesh(DiceData->DiceMesh.LoadSynchronous());
+		DiceMeshComponent->SetMaterial(0, DiceData->DiceMaterial.LoadSynchronous());	
+	}
 }
 
 
@@ -106,18 +108,14 @@ void ADiceActor::HandlePhysicsSleep(UPrimitiveComponent* SleepingComponent, FNam
 FText ADiceActor::CalculateDiceResult() const
 {
 	// Check if the mesh and data are valid
-	if (!DiceMeshComponent || DiceData.IsNull())
+	if (!DiceMeshComponent || !DiceId.IsValid())
 	{
 		UE_LOG(LogTemp, Warning, TEXT("DiceMeshComponent or DiceData is not valid."));
 		return FText::FromString("Invalid");
 	}
 
-	UPDA_Dice* LoadedData = DiceData.Get();
-	if (!LoadedData)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("Failed to get DiceData."));
-		return FText::FromString("Invalid");
-	}
+	UAssetManager& AssetManager = UAssetManager::Get();
+	const UPDA_Dice* DiceData = Cast<UPDA_Dice>(AssetManager.GetPrimaryAssetObject(DiceId));
 
 	// Store the socket name with the highest position
 	FName HighestSocketName;
@@ -139,10 +137,10 @@ FText ADiceActor::CalculateDiceResult() const
 	}
 
 	// If we have found a valid socket
-	if (HighestSocketName != NAME_None && LoadedData->FaceLabels.Contains(HighestSocketName.ToString()))
+	if (HighestSocketName != NAME_None && DiceData->FaceLabels.Contains(HighestSocketName.ToString()))
 	{
 		// Get the label from the map
-		FText FaceLabel = LoadedData->FaceLabels[HighestSocketName.ToString()];
+		FText FaceLabel = DiceData->FaceLabels[HighestSocketName.ToString()];
 		return FaceLabel;
 	}
 
@@ -154,19 +152,21 @@ FText ADiceActor::CalculateDiceResult() const
 bool ADiceActor::CheckValidity() const
 {
 	FVector ActorUpVector = GetActorUpVector().GetSafeNormal();
+	UAssetManager& AssetManager = UAssetManager::Get();
+	const UPDA_Dice* DiceData = Cast<UPDA_Dice>(AssetManager.GetPrimaryAssetObject(DiceId));
 
     for (const FVector& FaceNormal : DiceData->FaceNormals)
 	{
     	// Normalize the current face normal
-    	FVector NormalizedFaceNormal = FaceNormal.GetSafeNormal();
+    	const FVector NormalizedFaceNormal = FaceNormal.GetSafeNormal();
 
     	// Error tolerance value
     	float ErrorTolerance = 0.05f;
 
     	// Check if each component of the vectors is nearly equal
-    	bool bXEqual = FMath::IsNearlyEqual(NormalizedFaceNormal.X, ActorUpVector.X, ErrorTolerance);
-    	bool bYEqual = FMath::IsNearlyEqual(NormalizedFaceNormal.Y, ActorUpVector.Y, ErrorTolerance);
-    	bool bZEqual = FMath::IsNearlyEqual(NormalizedFaceNormal.Z, ActorUpVector.Z, ErrorTolerance);
+    	const bool bXEqual = FMath::IsNearlyEqual(NormalizedFaceNormal.X, ActorUpVector.X, ErrorTolerance);
+    	const bool bYEqual = FMath::IsNearlyEqual(NormalizedFaceNormal.Y, ActorUpVector.Y, ErrorTolerance);
+    	const bool bZEqual = FMath::IsNearlyEqual(NormalizedFaceNormal.Z, ActorUpVector.Z, ErrorTolerance);
 
     	// If all components are nearly equal, set a valid flag, else set invalid
     	if (bXEqual || bYEqual || bZEqual) return true;

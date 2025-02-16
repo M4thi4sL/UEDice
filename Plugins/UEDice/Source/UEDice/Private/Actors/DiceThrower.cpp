@@ -46,33 +46,31 @@ void ADiceThrower::OnConstruction(const FTransform& Transform)
 
 void ADiceThrower::SpawnDice()
 {
-	for (UPDA_Dice* DiceData : DiceArray)
+	for (FPrimaryAssetId DiceData : DiceArray)
 	{
-		if (DiceData)
+		if (DiceData.IsValid())
 		{
-			// Get the AssetManager
 			UAssetManager& AssetManager = UAssetManager::Get();
 
-			// Get the primary asset ID for the DiceData
-			FPrimaryAssetId AssetId = DiceData->GetPrimaryAssetId();
-
-			// Specify the bundles to load (e.g., "Game")
 			TArray<FName> BundlesToLoad;
 			BundlesToLoad.Add(FName("Game"));
 
-			// Set up the delegate to call once the assets are loaded
-			FStreamableDelegate OnAssetsLoadedDelegate = FStreamableDelegate::CreateUObject(this, &ADiceThrower::OnAssetsLoaded, DiceData);
-
-			// Asynchronously load the assets in the "Game" bundle
-			AssetManager.LoadPrimaryAsset(AssetId, BundlesToLoad, OnAssetsLoadedDelegate);
+			FStreamableDelegate OnAssetsLoadedDelegate = FStreamableDelegate::CreateLambda([this, DiceData]()
+		   {
+			   if (DiceData.IsValid()) OnAssetsLoaded(DiceData);
+		   });
+			AssetManager.LoadPrimaryAsset(DiceData, BundlesToLoad, OnAssetsLoadedDelegate);
 		}
 	}
 }
 
-void ADiceThrower::OnAssetsLoaded(UPDA_Dice* DiceData)
+void ADiceThrower::OnAssetsLoaded(const FPrimaryAssetId& LoadedAssetId)
 {
-	if (DiceData)
+	if (LoadedAssetId.IsValid())
 	{
+		UAssetManager& AssetManager = UAssetManager::Get();
+		UPDA_Dice* DiceData = Cast<UPDA_Dice>(AssetManager.GetPrimaryAssetObject(LoadedAssetId));
+		
 		// Now that the assets are loaded, retrieve them
 		TSubclassOf<ADiceActor> DiceClass = DiceData->DiceClass.Get();
 		UStaticMesh* DiceMesh = DiceData->DiceMesh.Get();
@@ -101,7 +99,7 @@ void ADiceThrower::OnAssetsLoaded(UPDA_Dice* DiceData)
             if (SpawnedDiceActor)
             {
                 // Assign the loaded data to the dice actor
-                SpawnedDiceActor->DiceData = DiceData;
+                SpawnedDiceActor->DiceId = LoadedAssetId;
                 SpawnedDiceActor->DiceMeshComponent->SetStaticMesh(DiceMesh);
 
                 // Set the material if valid
@@ -279,23 +277,18 @@ void ADiceThrower::ClearDice()
 	// Clear the array of spawned dice references
 	SpawnedDice.Empty();
 	DiceResultsMap.Empty();
+	DiceArray.Empty();
 	
 	// Broadcast that all dice have been cleared
 	OnDiceCleared.Broadcast();
 }
 
-void ADiceThrower::AddDice(UPDA_Dice* Dice)
+void ADiceThrower::AddDice(const FPrimaryAssetId DiceId)
 {
-	if (Dice)
-	{
-		DiceArray.Add(Dice);
-	}
+	if (DiceId.IsValid())	DiceArray.Add(DiceId);
 }
 
-void ADiceThrower::RemoveDice(UPDA_Dice* Dice)
+void ADiceThrower::RemoveDice(const FPrimaryAssetId DiceId)
 {
-	if (Dice)
-	{
-		DiceArray.RemoveSingle(Dice);
-	}
+	if (DiceId.IsValid()) DiceArray.RemoveSingle(DiceId);
 }

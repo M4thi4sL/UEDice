@@ -14,7 +14,7 @@
 class UPDA_Dice;
 class ADiceDecal;
 /**
- * A visual actor representation of a dice.
+ * A visual actor representation of a die.
  */
 
 UENUM(BlueprintType)
@@ -27,11 +27,11 @@ enum class EDieState : uint8
 };
 
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnDieResult, ADiceActor*, Die, const FText&, Result);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnDieStateChanged,ADiceActor*, Die,  EDieState, NewDieState);
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnDieHover, ADiceActor*, Die );
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnDieHoverEnd, ADiceActor*, Die );
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnDieClicked, ADiceActor*, Die);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnDieResult,  ADiceActor*, Die, const FText&, Result);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnDieStateChanged, ADiceActor*, Die,  const EDieState&, NewDieState);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnDieHover,  ADiceActor*, Die );
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnDieHoverEnd,  ADiceActor*, Die );
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnDieClicked,  ADiceActor*, Die);
 
 UCLASS(BlueprintType)
 class UEDICE_API ADiceActor : public AActor
@@ -40,7 +40,7 @@ class UEDICE_API ADiceActor : public AActor
 	
 
 public:
-	// Sets default values for this actor's properties
+	/** Sets default values for this actor's properties */
 	ADiceActor();
 	
 	UFUNCTION(BlueprintPure, Category = "Dice")
@@ -49,42 +49,42 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Dice")
 	void SetDieState(const EDieState NewDieState) ;
 
-	// Event handler for mouse hover start
+	/** Event handler for mouse hover start */
 	UFUNCTION(BlueprintCallable, Category = "Dice")
 	void HandleBeginCursorOver(UPrimitiveComponent* TouchedComponent);
 
-	// Event handler for mouse hover end
+	/** Event handler for mouse hover end */
 	UFUNCTION(BlueprintCallable, Category = "Dice")
 	void HandleEndCursorOver(UPrimitiveComponent* TouchedComponent);
 
-	// Event handler for mouse hover end
+	/** Event handler for mouse hover end */
 	UFUNCTION(BlueprintCallable, Category = "Dice")
 	void HandleOnClicked(UPrimitiveComponent* TouchedComponent, FKey ButtonPressed);
 	
-	// Static mesh component for visualizing the dice
+	/** Static mesh component for visualizing the dice */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Visual")
 	UStaticMeshComponent* DiceMeshComponent;
 
-	// The data asset for this dice
+	/** The data asset for this dice */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dice")
-	TSoftObjectPtr<UPDA_Dice> DiceData;
+	FPrimaryAssetId DiceId;
 
-	// Dice Decal
+	/** Dice Decal */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dice")
 	TSoftClassPtr<ADiceDecal> DiceDecal;	
 	
-	// Initialize the dice actor based on the data asset
+	/** Initialize the dice actor based on the data asset */
 	UFUNCTION(BlueprintCallable, Category = "Dice")
 	void InitializeDice();
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Audio")
 	USoundBase* DiceHitSound;
 	
-	// Event dispatcher for broadcasting the dice result
+	/** Event dispatcher for broadcasting the dice result */
 	UPROPERTY(BlueprintAssignable, Category = "Dice")
 	FOnDieResult OnDieResult;
 
-	// Event dispatcher for broadcasting when the result has changed.
+	/** Event dispatcher for broadcasting when the result has changed. */
 	UPROPERTY(BlueprintAssignable, Category = "Dice")
 	FOnDieStateChanged OnDieStateChanged;
 
@@ -98,27 +98,26 @@ public:
 	FOnDieClicked OnDieClicked;
 	
 protected:
-	// Called when the game starts or when spawned
+	/** Called when the game starts or when spawned */
 	virtual void BeginPlay() override;
 
 private:
-	// Handler for when the physics simulation goes to sleep
+	/** Handler for when the physics simulation goes to sleep */
 	UFUNCTION()
 	void HandlePhysicsSleep(UPrimitiveComponent* SleepingComponent, FName BoneName);
 
 	UFUNCTION()
 	void HandleOnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, FVector NormalImpulse, const FHitResult& Hit);
 
-	// Calculate the dice result based on the up face
+	/** Calculate the dice result based on the up face */
 	FText CalculateDiceResult() const;
 
-	// Check if we got a valid dice result, eg: the dice didn't stop correctly.
+	/** Check if we got a valid dice result, eg: the dice didn't stop correctly. */
 	bool CheckValidity() const;
 	
-	// Pointer to the currently spawned decal (to track whether it's spawned)
+	/** Pointer to the currently spawned decal (to track whether it's spawned) */
 	TWeakObjectPtr<ADiceDecal> SpawnedDecal;
 	
-	// The internal DieState
+	/** The internal DieState */
 	EDieState DieState;
-	
 };

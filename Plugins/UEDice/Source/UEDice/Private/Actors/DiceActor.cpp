@@ -13,6 +13,7 @@
 #include "Actors/DiceDecal.h"
 #include "Engine/AssetManager.h"
 #include "Kismet/GameplayStatics.h"
+#include "Net/UnrealNetwork.h"
 
 // Sets default values
 ADiceActor::ADiceActor()
@@ -44,9 +45,9 @@ ADiceActor::ADiceActor()
 	DiceMeshComponent->OnComponentHit.AddDynamic(this, &ADiceActor::HandleOnHit);
 
 	//Replication
-	//SetReplicates(true);
-	//SetReplicatingMovement(true);
-	//DiceMeshComponent->SetIsReplicated(true);
+	bReplicates = true;
+	SetReplicatingMovement(true);
+	DiceMeshComponent->SetIsReplicated(true);
 
 	// Die state
 	DieState = EDieState::Idle;
@@ -59,11 +60,16 @@ EDieState ADiceActor::GetDieState() const
 
 void ADiceActor::SetDieState(const EDieState NewDieState)
 {
-	if (NewDieState != DieState)
-	{
-		DieState = NewDieState;
-		OnDieStateChanged.Broadcast(this, DieState);
-	}
+    if (HasAuthority()) // Only the server can set this
+    {
+        DieState = NewDieState;
+        OnRep_DieState();
+    }
+}
+
+void ADiceActor::Multicast_SetDieState_Implementation(EDieState NewDieState)
+{
+	SetDieState(NewDieState);
 }
 
 // Initialize the dice actor based on the data asset
@@ -91,18 +97,30 @@ void ADiceActor::InitializeDice()
 }
 
 
+void ADiceActor::OnRep_DieState()
+{
+	OnDieStateChanged.Broadcast(this, DieState);
+}
+
+void ADiceActor::Multicast_BroadcastResult_Implementation(const FText& Result)
+{
+	OnDieResult.Broadcast(this, Result);
+}
 void ADiceActor::HandlePhysicsSleep(UPrimitiveComponent* SleepingComponent, FName BoneName)
 {
-	// Physics simulation has gone to sleep; calculate and broadcast the dice result
-	FText DiceResult = CalculateDiceResult();
-	UE_LOG(LogTemp, Log, TEXT("Physics sleep detected. Dice result is: %s"), *DiceResult.ToString());
+	if (!HasAuthority()) return; // server only
 	
-	if(CheckValidity())
+	const FText DiceResult = CalculateDiceResult();
+    
+	if (CheckValidity())
 	{
 		SetDieState(EDieState::Stopped);
-		OnDieResult.Broadcast(this, DiceResult);
+		Multicast_BroadcastResult(DiceResult);
 	}
-	else SetDieState(EDieState::Invalid);
+	else 
+	{
+		SetDieState(EDieState::Invalid);
+	}
 }
 
 FText ADiceActor::CalculateDiceResult() const
@@ -151,8 +169,8 @@ FText ADiceActor::CalculateDiceResult() const
 
 bool ADiceActor::CheckValidity() const
 {
-	FVector ActorUpVector = GetActorUpVector().GetSafeNormal();
-	UAssetManager& AssetManager = UAssetManager::Get();
+	const FVector ActorUpVector = GetActorUpVector().GetSafeNormal();
+	const UAssetManager& AssetManager = UAssetManager::Get();
 	const UPDA_Dice* DiceData = Cast<UPDA_Dice>(AssetManager.GetPrimaryAssetObject(DiceId));
 
     for (const FVector& FaceNormal : DiceData->FaceNormals)
@@ -179,6 +197,13 @@ void ADiceActor::BeginPlay()
 	Super::BeginPlay();
 	
 	InitializeDice();
+}
+
+void ADiceActor::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(ADiceActor, DieState);
+
 }
 
 void ADiceActor::HandleBeginCursorOver(UPrimitiveComponent* TouchedComponent)

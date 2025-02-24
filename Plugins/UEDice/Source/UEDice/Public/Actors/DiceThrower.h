@@ -50,10 +50,19 @@ public:
 	UFUNCTION(BlueprintCallable, CallInEditor, Category = "Dice")
 	void SpawnDice();
 
+	UFUNCTION(Server, Reliable, WithValidation)
+	void Server_SpawnDice();
+
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_SpawnDice(ADiceActor* SpawnedDie);
+	
 	/** Function to launch a single die */
 	UFUNCTION(BlueprintCallable, CallInEditor, Category = "Dice")
 	void LaunchDie(ADiceActor* Die);
+	UFUNCTION(Server, Reliable, WithValidation)
+	void Server_LaunchDie(ADiceActor* Die);
 
+	
 	/** Reroll the existing spawned dice. */
 	UFUNCTION(BlueprintCallable, CallInEditor, Category = "Dice")
 	void RerollAll();
@@ -69,12 +78,19 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Dice")
 	void AddDice(const FPrimaryAssetId DiceId);
 
+	UFUNCTION(Server,Reliable, WithValidation, Category = "Dice")
+	void Server_AddDice(const FPrimaryAssetId DiceId);
+	
 	UFUNCTION(BlueprintCallable, Category = "Dice")
 	void RemoveDice(const FPrimaryAssetId DiceId);
+
+	UFUNCTION(Server, Reliable, WithValidation, Category = "Dice")
+	void Server_RemoveDice(const FPrimaryAssetId DiceId);
 	
 protected:
 	virtual void BeginPlay() override;
 	virtual void OnConstruction(const FTransform& Transform) override;
+	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 	
 	/** The arrow component for visualizing the throw direction*/
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Debug")
@@ -85,7 +101,7 @@ protected:
 	UBoxComponent* SpawnBox;
 
 	/** Array of dice data assets*/
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dice")
+	UPROPERTY(Replicated, EditAnywhere, BlueprintReadWrite, Category = "Dice")
 	TArray<FPrimaryAssetId> DiceArray;
 
 	/** Force applied to launch the dice*/
@@ -95,7 +111,9 @@ protected:
 	/** Box extent for spawning dice*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dice")
 	FVector SpawnBoxExtent = FVector(5.0f, 10.0f, 5.0f);
-
+	
+	UPROPERTY(Replicated)
+	TArray<ADiceActor*> SpawnedDice;
 private:
 
 	UFUNCTION()
@@ -103,9 +121,6 @@ private:
 
 	UFUNCTION()
 	void OnDieClicked( ADiceActor* Die);
-	
-	/** Array of spawned dice actors*/
-	TArray<ADiceActor*> SpawnedDice;
 	
 	/** Map to keep track of the dices and their values.*/
 	TMap<ADiceActor*, FString> DiceResultsMap;

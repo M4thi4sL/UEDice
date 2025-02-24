@@ -49,6 +49,11 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Dice")
 	void SetDieState(const EDieState NewDieState) ;
 
+    UFUNCTION(NetMulticast, Reliable)
+    void Multicast_SetDieState(EDieState NewDieState);
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_BroadcastResult(const FText& Result);
+	
 	/** Event handler for mouse hover start */
 	UFUNCTION(BlueprintCallable, Category = "Dice")
 	void HandleBeginCursorOver(UPrimitiveComponent* TouchedComponent);
@@ -100,7 +105,14 @@ public:
 protected:
 	/** Called when the game starts or when spawned */
 	virtual void BeginPlay() override;
+	virtual void GetLifetimeReplicatedProps( TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
+    UPROPERTY(ReplicatedUsing = OnRep_DieState)
+    EDieState DieState;
+
+	UFUNCTION()
+	void OnRep_DieState();
+	
 private:
 	/** Handler for when the physics simulation goes to sleep */
 	UFUNCTION()
@@ -118,6 +130,5 @@ private:
 	/** Pointer to the currently spawned decal (to track whether it's spawned) */
 	TWeakObjectPtr<ADiceDecal> SpawnedDecal;
 	
-	/** The internal DieState */
-	EDieState DieState;
+
 };

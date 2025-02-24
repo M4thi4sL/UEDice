@@ -12,9 +12,11 @@
 #include "Components/BoxComponent.h"
 #include "DataAssets/PDA_Dice.h"
 #include "Actors/DiceActor.h"
+#include "Controller/DicePlayerState.h"
 #include "Engine/World.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Engine/AssetManager.h"
+#include "Net/UnrealNetwork.h"
 
 ADiceThrower::ADiceThrower()
 {
@@ -46,22 +48,103 @@ void ADiceThrower::OnConstruction(const FTransform& Transform)
 
 void ADiceThrower::SpawnDice()
 {
+	if (HasAuthority())
+	{
+		for (FPrimaryAssetId DiceData : DiceArray)
+		{
+			if (DiceData.IsValid())
+			{
+				UAssetManager& AssetManager = UAssetManager::Get();
+
+				TArray<FName> BundlesToLoad;
+				BundlesToLoad.Add(FName("Game"));
+
+				FStreamableDelegate OnAssetsLoadedDelegate = FStreamableDelegate::CreateLambda([this, DiceData]()
+			   {
+				   if (DiceData.IsValid()) OnAssetsLoaded(DiceData);
+			   });
+				AssetManager.LoadPrimaryAsset(DiceData, BundlesToLoad, OnAssetsLoadedDelegate);
+			}
+		}
+	}
+	else
+	{
+		APlayerController* PC = GetWorld()->GetFirstPlayerController();
+		if (PC)
+		{
+			ADicePlayerState* PS = PC->GetPlayerState<ADicePlayerState>();
+			if (PS)
+			{
+				PS->Server_RequestSpawnDice();
+			}
+		}
+	}
+}
+
+void ADiceThrower::Multicast_SpawnDice_Implementation(ADiceActor* SpawnedDie)
+{
+	if (!HasAuthority())
+	{
+		SpawnedDice.Add(SpawnedDie);
+	}
+}
+
+void ADiceThrower::Server_SpawnDice_Implementation()
+{
 	for (FPrimaryAssetId DiceData : DiceArray)
 	{
 		if (DiceData.IsValid())
 		{
 			UAssetManager& AssetManager = UAssetManager::Get();
+			UPDA_Dice* DiceAsset = Cast<UPDA_Dice>(AssetManager.GetPrimaryAssetObject(DiceData));
 
-			TArray<FName> BundlesToLoad;
-			BundlesToLoad.Add(FName("Game"));
+			if (DiceAsset)
+			{
+				FVector SpawnLocation = UKismetMathLibrary::RandomPointInBoundingBox(GetActorLocation(), SpawnBoxExtent);
+				FRotator SpawnRotation = UKismetMathLibrary::RandomRotator(true);
 
-			FStreamableDelegate OnAssetsLoadedDelegate = FStreamableDelegate::CreateLambda([this, DiceData]()
-		   {
-			   if (DiceData.IsValid()) OnAssetsLoaded(DiceData);
-		   });
-			AssetManager.LoadPrimaryAsset(DiceData, BundlesToLoad, OnAssetsLoadedDelegate);
+				ADiceActor* SpawnedDiceActor = GetWorld()->SpawnActor<ADiceActor>(DiceAsset->DiceClass.Get(), SpawnLocation, SpawnRotation);
+
+				if (SpawnedDiceActor)
+				{
+					SpawnedDiceActor->DiceId = DiceData;
+					SpawnedDiceActor->SetDieState(EDieState::Idle);
+
+					SpawnedDice.Add(SpawnedDiceActor);
+					Multicast_SpawnDice(SpawnedDiceActor); // Send update to all clients
+				}
+			}
 		}
 	}
+}
+
+bool ADiceThrower::Server_SpawnDice_Validate()
+{
+	return true;
+}
+
+void ADiceThrower::Server_LaunchDie_Implementation(ADiceActor* Die)
+{
+	if (Die && Die->DiceMeshComponent)
+	{
+		FVector LaunchDirection = DebugArrow->GetForwardVector();
+		Die->DiceMeshComponent->AddImpulse(LaunchDirection * LaunchForce, NAME_None, true);
+		Die->SetDieState(EDieState::Rolling);
+	}
+}
+
+bool ADiceThrower::Server_LaunchDie_Validate(ADiceActor* Die)
+{
+	return true;
+}
+
+void ADiceThrower::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(ADiceThrower, SpawnedDice);
+
+	DOREPLIFETIME(ADiceThrower, DiceArray);
+
 }
 
 void ADiceThrower::OnAssetsLoaded(const FPrimaryAssetId& LoadedAssetId)
@@ -285,10 +368,51 @@ void ADiceThrower::ClearDice()
 
 void ADiceThrower::AddDice(const FPrimaryAssetId DiceId)
 {
-	if (DiceId.IsValid())	DiceArray.Add(DiceId);
+	if (!HasAuthority())
+	{
+		Server_AddDice(DiceId);
+		return;
+	}
+
+	if (DiceId.IsValid())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("✅ Server: Adding Dice: %s"), *DiceId.ToString());
+		DiceArray.Add(DiceId);
+	}
 }
 
 void ADiceThrower::RemoveDice(const FPrimaryAssetId DiceId)
 {
-	if (DiceId.IsValid()) DiceArray.RemoveSingle(DiceId);
+	if (!HasAuthority())
+	{
+		Server_RemoveDice(DiceId);
+		return;
+	}
+
+	if (DiceId.IsValid())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("✅ Server: Removing Dice: %s"), *DiceId.ToString());
+		DiceArray.RemoveSingle(DiceId);
+	}
+}
+
+
+void ADiceThrower::Server_AddDice_Implementation(const FPrimaryAssetId DiceId)
+{
+	AddDice(DiceId);
+}
+
+bool ADiceThrower::Server_AddDice_Validate(const FPrimaryAssetId DiceId)
+{
+	return true;
+}
+
+void ADiceThrower::Server_RemoveDice_Implementation(const FPrimaryAssetId DiceId)
+{
+	RemoveDice(DiceId);
+}
+
+bool ADiceThrower::Server_RemoveDice_Validate(const FPrimaryAssetId DiceId)
+{
+	return true;
 }

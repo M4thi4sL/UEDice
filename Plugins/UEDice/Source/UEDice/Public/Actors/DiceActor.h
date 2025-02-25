@@ -71,7 +71,7 @@ public:
 	UStaticMeshComponent* DiceMeshComponent;
 
 	/** The data asset for this dice */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dice")
+	UPROPERTY(ReplicatedUsing= OnRep_DieId, EditAnywhere, BlueprintReadWrite, Category = "Dice")
 	FPrimaryAssetId DiceId;
 
 	/** Dice Decal */
@@ -112,7 +112,10 @@ protected:
 
 	UFUNCTION()
 	void OnRep_DieState();
-	
+
+	UFUNCTION()
+	void OnRep_DieId();
+
 private:
 	/** Handler for when the physics simulation goes to sleep */
 	UFUNCTION()
@@ -129,6 +132,4 @@ private:
 	
 	/** Pointer to the currently spawned decal (to track whether it's spawned) */
 	TWeakObjectPtr<ADiceDecal> SpawnedDecal;
-	
-
 };

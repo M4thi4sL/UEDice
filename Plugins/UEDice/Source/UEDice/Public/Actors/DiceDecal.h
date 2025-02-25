@@ -27,6 +27,21 @@ public:
 	USceneComponent* SceneRoot;
 	
 	/** Decal visualisation */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Dice")
+	UPROPERTY(ReplicatedUsing = OnRep_Decal, VisibleAnywhere, BlueprintReadOnly, Category = "Dice")
 	UDecalComponent* Decal;
+	
+	/** Sets the decal color (should be called on the server) */
+    void SetDecalColor(const FLinearColor& NewColor);
+
+protected:
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	
+	UFUNCTION()
+	void OnRep_Decal();
+		
+	/** Replicated color that determines the decal appearance */
+	UPROPERTY(ReplicatedUsing = OnRep_Decal, BlueprintReadOnly, Category = "Dice")
+	FLinearColor DecalColor;
+
 };
+

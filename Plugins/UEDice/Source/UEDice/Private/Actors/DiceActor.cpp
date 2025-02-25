@@ -43,7 +43,7 @@ ADiceActor::ADiceActor()
 	DiceMeshComponent->OnEndCursorOver.AddDynamic(this, &ADiceActor::HandleEndCursorOver);
 	DiceMeshComponent->OnClicked.AddDynamic(this, &ADiceActor::HandleOnClicked);
 	DiceMeshComponent->OnComponentHit.AddDynamic(this, &ADiceActor::HandleOnHit);
-
+	
 	//Replication
 	bReplicates = true;
 	SetReplicatingMovement(true);
@@ -88,18 +88,17 @@ void ADiceActor::InitializeDice()
 		DiceMeshComponent->SetStaticMesh(DiceData->DiceMesh.Get());
 		DiceMeshComponent->SetMaterial(0, DiceData->DiceMaterial.Get());	
 	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("DiceActor: Object from DiceId was not valid, using fallback method"))
-		DiceMeshComponent->SetStaticMesh(DiceData->DiceMesh.LoadSynchronous());
-		DiceMeshComponent->SetMaterial(0, DiceData->DiceMaterial.LoadSynchronous());	
-	}
 }
 
 
 void ADiceActor::OnRep_DieState()
 {
 	OnDieStateChanged.Broadcast(this, DieState);
+}
+
+void ADiceActor::OnRep_DieId()
+{
+	InitializeDice();
 }
 
 void ADiceActor::Multicast_BroadcastResult_Implementation(const FText& Result)
@@ -203,42 +202,44 @@ void ADiceActor::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifeti
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(ADiceActor, DieState);
+	DOREPLIFETIME(ADiceActor, DiceId);
 
 }
 
 void ADiceActor::HandleBeginCursorOver(UPrimitiveComponent* TouchedComponent)
 {
-	if (!DiceDecal.IsNull()  && DieState == EDieState::Stopped)
+	// Only the server should spawn the decal for replication.
+	if (!HasAuthority())
 	{
-		// Load the class from the soft class pointer
-		UClass* DecalClass = DiceDecal.LoadSynchronous();
+		return;
+	}
 
-		if (DecalClass)
+	if (!DiceDecal.IsNull() && DieState == EDieState::Stopped)
+	{
+		if (UClass* DecalClass = DiceDecal.LoadSynchronous())
 		{
-			// Spawn the decal actor at location (0, 0, 0) relative to the dice actor
-			FVector SpawnLocation = FVector(0.f, 0.f, 0.f); // Relative location
-			FRotator SpawnRotation = FRotator::ZeroRotator; // No rotation
+			// Spawn the decal actor at a relative location (you might adjust this if needed)
+			FVector SpawnLocation = FVector::ZeroVector;
+			FRotator SpawnRotation = FRotator::ZeroRotator;
 			FActorSpawnParameters SpawnParams;
-			SpawnParams.Owner = this; // Set the owner to the dice actor
+			SpawnParams.Owner = this;
 			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-			// Spawn the decal actor in the world using the loaded class
-			ADiceDecal* DecalActor = GetWorld()->SpawnActor<ADiceDecal>(DecalClass, SpawnLocation, SpawnRotation, SpawnParams);
-
-			if (DecalActor)
+			if (ADiceDecal* DecalActor = GetWorld()->SpawnActor<ADiceDecal>(DecalClass, SpawnLocation, SpawnRotation, SpawnParams))
 			{
-				// Store the weak pointer reference
 				SpawnedDecal = DecalActor;
-
-				// Attach the decal to the dice actor with the equivalent of Blueprint setup
 				FAttachmentTransformRules AttachRules(EAttachmentRule::KeepRelative, EAttachmentRule::KeepWorld, EAttachmentRule::KeepRelative, true);
 				DecalActor->AttachToActor(this, AttachRules);
+
+				// Set the decal color using the hovering player's color.
+				// (We’ll discuss obtaining that color in step 2.)
+				// For example:
+				// DecalActor->SetDecalColor(PlayerHoverColor);
 			}
 		}
 	}
 	OnDieHover.Broadcast(this);
 }
-
 
 
 void ADiceActor::HandleEndCursorOver(UPrimitiveComponent* TouchedComponent)

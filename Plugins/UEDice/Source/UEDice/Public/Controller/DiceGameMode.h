@@ -3,26 +3,26 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/PlayerState.h"
-#include "DicePlayerState.generated.h"
-
-class ADiceThrower;
+#include "GameFramework/GameMode.h"
+#include "DiceGameMode.generated.h"
 
 /**
- * c++ baseclass for the playerstate
+ * 
  */
 UCLASS()
-class UEDICE_API ADicePlayerState : public APlayerState
+class UEDICE_API ADiceGameMode : public AGameMode
 {
 	GENERATED_BODY()
 
+
 public:
-	UFUNCTION(Server, Reliable, WithValidation)
-	void Server_RequestSpawnDice();
+	ADiceGameMode();
+	
+	// Predetermined list of colors to cycle through.
+	UPROPERTY(EditDefaultsOnly, Category = "Appearance")
+	TArray<FLinearColor> PredeterminedColors;
 
 protected:
-	virtual void BeginPlay() override;
-	
-	UPROPERTY()
-	ADiceThrower* CachedDiceThrower;
+	// Override PostLogin to assign colors to players.
+	virtual void PostLogin(APlayerController* NewPlayer) override;
 };

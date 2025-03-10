@@ -44,9 +44,9 @@ ADiceActor::ADiceActor()
 	DiceMeshComponent->OnComponentHit.AddDynamic(this, &ADiceActor::HandleOnHit);
 
 	//Replication
-	//SetReplicates(true);
-	//SetReplicatingMovement(true);
-	//DiceMeshComponent->SetIsReplicated(true);
+	SetReplicates(true);
+	SetReplicatingMovement(true);
+	DiceMeshComponent->SetIsReplicated(true);
 
 	// Die state
 	DieState = EDieState::Idle;

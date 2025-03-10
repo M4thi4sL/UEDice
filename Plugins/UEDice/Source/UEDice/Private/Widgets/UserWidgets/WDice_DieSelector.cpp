@@ -65,7 +65,6 @@ void UWDice_DieSelector::InitializeWidget_Implementation()
 				{
 					Image->SetBrushFromTexture(Die->Icon.Get());
 					Name->SetText(Die->Name);
-					UE_LOG(LogTemp, Warning, TEXT("Loading Dice"));
 				}
 			}
 		}
